@@ -9,6 +9,31 @@
 npm install screwdriver-datastore-sequelize
 ```
 
+### Initialization
+
+This module takes the same input as the [sequelize class](http://docs.sequelizejs.com/en/latest/api/sequelize/) with the exception of `database`, `username`, and `password`.  Those should be combined into the overall config object.
+
+```js
+const Sequelize = require('screwdriver-datastore-sequelize');
+const datastore = new Sequelize();
+```
+
+#### Define a specific region and credentials to interact with
+
+```js
+const Sequelize = require('screwdriver-datastore-sequelize');
+const pcGamerDatastore = new Sequelize({
+    dialect: 'postgres',
+    database: 'banana',
+    username: 'coconut',
+    password: 'm0nK3Ys&'
+});
+```
+
+### Methods
+
+See [base class](https://github.com/screwdriver-cd/datastore-base) for more information.
+
 ## Testing
 
 ```bash
@@ -25,7 +50,7 @@ Code licensed under the BSD 3-Clause license. See LICENSE file for terms.
 [license-image]: https://img.shields.io/npm/l/screwdriver-datastore-sequelize.svg
 [issues-image]: https://img.shields.io/github/issues/screwdriver-cd/datastore-sequelize.svg
 [issues-url]: https://github.com/screwdriver-cd/datastore-sequelize/issues
-[status-image]: https://cd.screwdriver.cd/pipelines/pipelineid/badge
-[status-url]: https://cd.screwdriver.cd/pipelines/pipelineid
+[status-image]: https://cd.screwdriver.cd/pipelines/a6d5a59f66988bc4726fd93023d405e61afba310/badge
+[status-url]: https://cd.screwdriver.cd/pipelines/a6d5a59f66988bc4726fd93023d405e61afba310
 [daviddm-image]: https://david-dm.org/screwdriver-cd/datastore-sequelize.svg?theme=shields.io
 [daviddm-url]: https://david-dm.org/screwdriver-cd/datastore-sequelize
