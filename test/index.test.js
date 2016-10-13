@@ -152,52 +152,6 @@ describe('index test', () => {
             });
         });
 
-        it('constructs the clients special for postgres', () => {
-            sequelizeClientMock.getDialect.returns('postgres');
-            datastore = new Datastore({
-                dialect: 'postgres'
-            });
-            assert.calledWith(sequelizeClientMock.define, 'jobs', {
-                id: {
-                    type: 'TEXT',
-                    primaryKey: true
-                },
-                name: {
-                    type: 'TEXT'
-                }
-            });
-            assert.calledWith(sequelizeClientMock.define, 'pipelines', {
-                id: {
-                    type: 'TEXT',
-                    primaryKey: true
-                },
-                str: {
-                    type: 'TEXT'
-                },
-                date: {
-                    type: 'DATE'
-                },
-                num: {
-                    type: 'DECIMAL'
-                },
-                bool: {
-                    type: 'BOOLEAN'
-                },
-                bin: {
-                    type: 'BLOB'
-                },
-                arr: {
-                    type: 'ARRAY'
-                },
-                obj: {
-                    type: 'JSON'
-                },
-                any: {
-                    type: null
-                }
-            });
-        });
-
         it('constructs the clients with a prefix', () => {
             datastore = new Datastore({
                 dialect: 'sqlite',
@@ -244,43 +198,6 @@ describe('index test', () => {
 
             sequelizeTableMock.findById.resolves(responseMock);
             responseMock.toJSON.returns(testData);
-
-            return datastore.get(testParams).then((data) => {
-                assert.deepEqual(data, realData);
-                assert.calledWith(sequelizeTableMock.findById, testParams.params.id);
-            });
-        });
-
-        it('gets data by id for postgres', () => {
-            const testParams = {
-                table: 'pipelines',
-                params: {
-                    id: 'someId'
-                }
-            };
-            const testData = {
-                id: 'data',
-                key: 'value',
-                arr: [1, 2, 3],
-                obj: {
-                    a: 'b'
-                }
-            };
-            const realData = {
-                id: 'data',
-                key: 'value',
-                arr: [1, 2, 3],
-                obj: {
-                    a: 'b'
-                }
-            };
-
-            sequelizeClientMock.getDialect.returns('postgres');
-            sequelizeTableMock.findById.resolves(responseMock);
-            responseMock.toJSON.returns(testData);
-            datastore = new Datastore({
-                dialect: 'postgres'
-            });
 
             return datastore.get(testParams).then((data) => {
                 assert.deepEqual(data, realData);
@@ -364,47 +281,6 @@ describe('index test', () => {
                     id: 'someIdToPutHere',
                     arr: '[1,2,3]',
                     obj: '{"a":"b"}'
-                });
-            });
-        });
-
-        it('saves the data for postgres', () => {
-            const expectedResult = {
-                id: 'someIdToPutHere',
-                key: 'value',
-                arr: [1, 2, 3],
-                obj: {
-                    a: 'b'
-                }
-            };
-
-            sequelizeTableMock.create.resolves();
-            sequelizeClientMock.getDialect.returns('postgres');
-            datastore = new Datastore({
-                dialect: 'postgres'
-            });
-
-            return datastore.save({
-                table: 'pipelines',
-                params: {
-                    id: 'someIdToPutHere',
-                    data: {
-                        key: 'value',
-                        arr: [1, 2, 3],
-                        obj: {
-                            a: 'b'
-                        }
-                    }
-                }
-            }).then((data) => {
-                assert.deepEqual(data, expectedResult);
-                assert.calledWith(sequelizeTableMock.create, {
-                    key: 'value',
-                    id: 'someIdToPutHere',
-                    arr: [1, 2, 3],
-                    obj: {
-                        a: 'b'
-                    }
                 });
             });
         });
