@@ -230,7 +230,8 @@ describe('index test', () => {
                 id: 'data',
                 key: 'value',
                 arr: '[1,2,3]',
-                obj: '{"a":"b"}'
+                obj: '{"a":"b"}',
+                bar: null
             };
             const realData = {
                 id: 'data',

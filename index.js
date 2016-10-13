@@ -34,6 +34,10 @@ function decodeFromDialect(dialect, content, model) {
             if (fieldType === 'array' || fieldType === 'object') {
                 decodedValues[fieldName] = JSON.parse(decodedValues[fieldName]);
             }
+
+            if (decodedValues[fieldName] === null) {
+                delete decodedValues[fieldName];
+            }
         });
     }
 
