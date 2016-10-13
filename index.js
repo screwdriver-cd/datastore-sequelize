@@ -22,20 +22,20 @@ function decodeFromDialect(dialect, content, model) {
     }
 
     const decodedValues = content.toJSON();
+    const fields = model.base.describe().children;
 
-    // Convert non-postgres complex values
-    if (dialect !== 'postgres') {
-        const fields = model.base.describe().children;
+    Object.keys(decodedValues).forEach((fieldName) => {
+        const field = fields[fieldName] || {};
+        const fieldType = field.type;
 
-        Object.keys(decodedValues).forEach((fieldName) => {
-            const field = fields[fieldName] || {};
-            const fieldType = field.type;
+        if (fieldType === 'array' || fieldType === 'object') {
+            decodedValues[fieldName] = JSON.parse(decodedValues[fieldName]);
+        }
 
-            if (fieldType === 'array' || fieldType === 'object') {
-                decodedValues[fieldName] = JSON.parse(decodedValues[fieldName]);
-            }
-        });
-    }
+        if (decodedValues[fieldName] === null) {
+            delete decodedValues[fieldName];
+        }
+    });
 
     return Promise.resolve(decodedValues);
 }
@@ -60,19 +60,16 @@ function encodeToDialect(dialect, content, model) {
             encodedObject[keyName] = promisedValues[index];
         });
 
-        // Convert non-postgres complex values
-        if (dialect !== 'postgres') {
-            const fields = model.base.describe().children;
+        const fields = model.base.describe().children;
 
-            encodedKeys.forEach((fieldName) => {
-                const field = fields[fieldName] || {};
-                const fieldType = field.type;
+        encodedKeys.forEach((fieldName) => {
+            const field = fields[fieldName] || {};
+            const fieldType = field.type;
 
-                if (fieldType === 'array' || fieldType === 'object') {
-                    encodedObject[fieldName] = JSON.stringify(encodedObject[fieldName]);
-                }
-            });
-        }
+            if (fieldType === 'array' || fieldType === 'object') {
+                encodedObject[fieldName] = JSON.stringify(encodedObject[fieldName]);
+            }
+        });
 
         return encodedObject;
     });
@@ -88,6 +85,8 @@ function encodeToDialect(dialect, content, model) {
 function getSequelizeTypeFromJoi(dialect, type) {
     switch (type) {
     case 'string':
+    case 'array':
+    case 'object':
         return Sequelize.TEXT;
     case 'date':
         return Sequelize.DATE;
@@ -97,12 +96,6 @@ function getSequelizeTypeFromJoi(dialect, type) {
         return Sequelize.BOOLEAN;
     case 'binary':
         return Sequelize.BLOB;
-    case 'array':
-        // Unique to postgres, so JSON stringify for others
-        return dialect === 'postgres' ? Sequelize.ARRAY(Sequelize.TEXT) : Sequelize.TEXT;
-    case 'object':
-        // Unique to postgres, so JSON stringify for others
-        return dialect === 'postgres' ? Sequelize.JSON : Sequelize.TEXT;
     default:
         return null;
     }
