@@ -7,8 +7,9 @@ shared:
 jobs:
     main:
         steps:
-            - install: npm install
-            - test: npm test
+            - yarn: npm install -g yarn
+            - install: yarn install
+            - test: yarn test
 
     publish:
         steps:
