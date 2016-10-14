@@ -115,6 +115,7 @@ class Squeakquel extends Datastore {
     constructor(config = {}) {
         super();
 
+        config.logging = () => {};
         this.client = new Sequelize(
             config.database || 'screwdriver',
             config.username,
