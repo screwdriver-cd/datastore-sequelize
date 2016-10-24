@@ -50,7 +50,7 @@ Code licensed under the BSD 3-Clause license. See LICENSE file for terms.
 [license-image]: https://img.shields.io/npm/l/screwdriver-datastore-sequelize.svg
 [issues-image]: https://img.shields.io/github/issues/screwdriver-cd/datastore-sequelize.svg
 [issues-url]: https://github.com/screwdriver-cd/datastore-sequelize/issues
-[status-image]: https://cd.screwdriver.cd/pipelines/a6d5a59f66988bc4726fd93023d405e61afba310/badge
-[status-url]: https://cd.screwdriver.cd/pipelines/a6d5a59f66988bc4726fd93023d405e61afba310
+[status-image]: https://cd.screwdriver.cd/pipelines/d0335367a51c89e0e64b07cda5a071eecb5cea32/badge
+[status-url]: https://cd.screwdriver.cd/pipelines/d0335367a51c89e0e64b07cda5a071eecb5cea32
 [daviddm-image]: https://david-dm.org/screwdriver-cd/datastore-sequelize.svg?theme=shields.io
 [daviddm-url]: https://david-dm.org/screwdriver-cd/datastore-sequelize
