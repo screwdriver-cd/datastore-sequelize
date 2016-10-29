@@ -41,7 +41,7 @@
     "sinon-as-promised": "^4.0.2"
   },
   "dependencies": {
-    "mysql2": "^1.1.1",
+    "mysql": "^2.11.1",
     "pg": "^6.1.0",
     "pg-hstore": "^2.3.2",
     "screwdriver-data-schema": "^14.0.0",
