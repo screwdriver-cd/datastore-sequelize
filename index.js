@@ -84,12 +84,8 @@ function encodeToDialect(dialect, content, model) {
  * @return {SequelizeType}           Type to use in Sequelize
  */
 function getSequelizeTypeFromJoi(dialect, type, rules) {
-    let length;
-
     // Get the column length if length/max rule is included in dataschema
-    if (rules) {
-        length = rules.filter(o => o.name === 'length' || o.name === 'max').map(o => o.arg)[0];
-    }
+    const length = rules.filter(o => o.name === 'length' || o.name === 'max').map(o => o.arg)[0];
 
     switch (type) {
     case 'string':
@@ -168,7 +164,11 @@ class Squeakquel extends Datastore {
         Object.keys(fields).forEach((fieldName) => {
             const field = fields[fieldName];
             const output = {
-                type: getSequelizeTypeFromJoi(this.client.getDialect(), field.type, field.rules)
+                type: getSequelizeTypeFromJoi(
+                    this.client.getDialect(),
+                    field.type,
+                    field.rules || []
+                )
             };
 
             if (fieldName === 'id') {
