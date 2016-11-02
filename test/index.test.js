@@ -40,6 +40,7 @@ describe('index test', () => {
             getDialect: sinon.stub().returns('sqlite')
         };
         sequelizeMock = sinon.stub().returns(sequelizeClientMock);
+        sequelizeMock.STRING = sinon.stub().withArgs(40).returns('VARCHAR(40)');
         sequelizeMock.TEXT = 'TEXT';
         sequelizeMock.DATE = 'DATE';
         sequelizeMock.DECIMAL = 'DECIMAL';
@@ -55,7 +56,7 @@ describe('index test', () => {
             models: {
                 pipeline: {
                     base: joi.object({
-                        id: joi.string(),
+                        id: joi.string().length(40),
                         str: joi.string(),
                         date: joi.date(),
                         num: joi.number(),
@@ -70,7 +71,7 @@ describe('index test', () => {
                 },
                 job: {
                     base: joi.object({
-                        id: joi.string(),
+                        id: joi.string().length(40),
                         name: joi.string()
                     }),
                     tableName: 'jobs',
@@ -113,7 +114,7 @@ describe('index test', () => {
             });
             assert.calledWith(sequelizeClientMock.define, 'jobs', {
                 id: {
-                    type: 'TEXT',
+                    type: 'VARCHAR(40)',
                     primaryKey: true
                 },
                 name: {
@@ -122,7 +123,7 @@ describe('index test', () => {
             });
             assert.calledWith(sequelizeClientMock.define, 'pipelines', {
                 id: {
-                    type: 'TEXT',
+                    type: 'VARCHAR(40)',
                     primaryKey: true
                 },
                 str: {
