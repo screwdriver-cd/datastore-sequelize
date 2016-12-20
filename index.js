@@ -173,6 +173,12 @@ class Squeakquel extends Datastore {
 
             if (fieldName === 'id') {
                 output.primaryKey = true;
+                output.autoIncrement = true;
+                output.type = Sequelize.INTEGER.UNSIGNED;
+            }
+
+            if (schema.keys.indexOf(fieldName) !== -1) {
+                output.unique = 'uniquerow';
             }
 
             tableFields[fieldName] = output;
@@ -196,19 +202,27 @@ class Squeakquel extends Datastore {
      * @param  {Object}   config             Configuration object
      * @param  {String}   config.table       Name of the table to interact with
      * @param  {Object}   config.params      Record Data
-     * @param  {String}   config.params.id   ID of the entry to fetch
+     * @param  {String}   [config.params.id] ID of the entry to fetch
      * @return {Promise}                     Resolves to the record found from datastore
      */
     _get(config) {
         const table = this.tables[config.table];
         const model = this.models[config.table];
+        let finder;
 
         if (!table) {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
 
-        return table.findById(config.params.id)
-            .then(item => decodeFromDialect(this.client.getDialect(), item, model));
+        if (config.params.id === undefined) {
+            finder = table.findOne({
+                where: config.params
+            });
+        } else {
+            finder = table.findById(config.params.id);
+        }
+
+        return finder.then(item => decodeFromDialect(this.client.getDialect(), item, model));
     }
 
     /**
@@ -216,13 +230,10 @@ class Squeakquel extends Datastore {
      * @param  {Object}   config             Configuration object
      * @param  {String}   config.table       Table name
      * @param  {Object}   config.params      Record data
-     * @param  {String}   config.params.id   Unique id. Typically the desired primary key
-     * @param  {Object}   config.params.data The data to save
      * @return {Promise}                     Resolves to the record that was saved
      */
     _save(config) {
-        const id = config.params.id;
-        const userData = config.params.data;
+        const userData = config.params;
         const table = this.tables[config.table];
         const model = this.models[config.table];
 
@@ -230,11 +241,11 @@ class Squeakquel extends Datastore {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
 
-        userData.id = id;
-
         return encodeToDialect(this.client.getDialect(), userData, model)
             .then(item => table.create(item))
-            .then(() => userData);
+            .then(row => row.get({
+                plain: true
+            }));
     }
 
     /**
@@ -265,20 +276,17 @@ class Squeakquel extends Datastore {
      * @param  {String}   config.table       Table name
      * @param  {Object}   config.params      Record data
      * @param  {String}   config.params.id   Unique id. Typically the desired primary key
-     * @param  {Object}   config.params.data The data to update with
      * @return {Promise}                     Resolves to the record that was updated
      */
     _update(config) {
         const id = config.params.id;
-        const userData = config.params.data;
+        const userData = config.params;
         const table = this.tables[config.table];
         const model = this.models[config.table];
 
         if (!table) {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
-
-        userData.id = id;
 
         return encodeToDialect(this.client.getDialect(), userData, model)
             .then(item => table.update(item, {
