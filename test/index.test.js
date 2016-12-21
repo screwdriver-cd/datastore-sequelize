@@ -10,28 +10,64 @@ sinon.assert.expose(assert, { prefix: '' });
 
 require('sinon-as-promised');
 
-describe('index test', () => {
+describe('index test', function () {
+    const dataSchemaMock = {
+        models: {
+            pipeline: {
+                base: joi.object({
+                    id: joi.string().length(40),
+                    str: joi.string(),
+                    date: joi.date(),
+                    num: joi.number(),
+                    bool: joi.boolean(),
+                    bin: joi.binary(),
+                    arr: joi.array(),
+                    obj: joi.object(),
+                    any: joi.any()
+                }),
+                tableName: 'pipelines',
+                keys: ['num', 'str'],
+                indexes: ['str']
+            },
+            job: {
+                base: joi.object({
+                    id: joi.string().length(40),
+                    name: joi.string()
+                }),
+                tableName: 'jobs',
+                keys: ['name'],
+                indexes: ['name'],
+                rangeKeys: ['name']
+            }
+        },
+        plugins: {
+            datastore: {
+                get: joi.object(),
+                update: joi.object(),
+                remove: joi.object(),
+                save: joi.object(),
+                scan: joi.object()
+            }
+        }
+    };
     let datastore;
     let Datastore;
-    let dataSchemaMock;
+    let sequelizeRowMock;
     let sequelizeTableMock;
     let sequelizeClientMock;
     let sequelizeMock;
     let responseMock;
 
-    before(() => {
-        mockery.enable({
-            useCleanCache: true,
-            warnOnUnregistered: false
-        });
-    });
+    // Time not important. Only life important.
+    this.timeout(5000);
 
-    beforeEach(() => {
+    before(() => {
         sequelizeTableMock = {
             create: sinon.stub(),
             destroy: sinon.stub(),
             findAll: sinon.stub(),
             findById: sinon.stub(),
+            findOne: sinon.stub(),
             update: sinon.stub()
         };
         sequelizeClientMock = {
@@ -39,11 +75,16 @@ describe('index test', () => {
             sync: sinon.stub().resolves(),
             getDialect: sinon.stub().returns('sqlite')
         };
+        sequelizeRowMock = {
+            get: sinon.stub()
+        };
         sequelizeMock = sinon.stub().returns(sequelizeClientMock);
         sequelizeMock.STRING = sinon.stub().withArgs(40).returns('VARCHAR(40)');
         sequelizeMock.TEXT = 'TEXT';
         sequelizeMock.DATE = 'DATE';
         sequelizeMock.DECIMAL = 'DECIMAL';
+        sequelizeMock.INTEGER = {};
+        sequelizeMock.INTEGER.UNSIGNED = 'UNSIGNED INTEGER';
         sequelizeMock.BOOLEAN = 'BOOLEAN';
         sequelizeMock.BLOB = 'BLOB';
         sequelizeMock.JSON = 'JSON';
@@ -52,55 +93,29 @@ describe('index test', () => {
         responseMock = {
             toJSON: sinon.stub()
         };
-        dataSchemaMock = {
-            models: {
-                pipeline: {
-                    base: joi.object({
-                        id: joi.string().length(40),
-                        str: joi.string(),
-                        date: joi.date(),
-                        num: joi.number(),
-                        bool: joi.boolean(),
-                        bin: joi.binary(),
-                        arr: joi.array(),
-                        obj: joi.object(),
-                        any: joi.any()
-                    }),
-                    tableName: 'pipelines',
-                    indexes: ['str']
-                },
-                job: {
-                    base: joi.object({
-                        id: joi.string().length(40),
-                        name: joi.string()
-                    }),
-                    tableName: 'jobs',
-                    indexes: ['name'],
-                    rangeKeys: ['name']
-                }
-            },
-            plugins: {
-                datastore: {
-                    get: joi.object(),
-                    update: joi.object(),
-                    remove: joi.object(),
-                    save: joi.object(),
-                    scan: joi.object()
-                }
-            }
-        };
+
+        mockery.enable({
+            useCleanCache: true,
+            warnOnUnregistered: false
+        });
         mockery.registerMock('sequelize', sequelizeMock);
         mockery.registerMock('screwdriver-data-schema', dataSchemaMock);
 
         /* eslint-disable global-require */
         Datastore = require('../index');
         /* eslint-enable global-require */
-        datastore = new Datastore();
     });
 
-    afterEach(() => {
-        mockery.deregisterAll();
-        mockery.resetCache();
+    beforeEach(() => {
+        // Reset mocks
+        Object.keys(sequelizeTableMock).forEach(key => sequelizeTableMock[key].reset());
+        Object.keys(sequelizeRowMock).forEach(key => sequelizeRowMock[key].reset());
+        Object.keys(responseMock).forEach(key => responseMock[key].reset());
+        sequelizeClientMock.define = sinon.stub().returns(sequelizeTableMock);
+        sequelizeClientMock.sync = sinon.stub().resolves();
+        sequelizeClientMock.getDialect = sinon.stub().returns('sqlite');
+
+        datastore = new Datastore();
     });
 
     after(() => {
@@ -114,26 +129,31 @@ describe('index test', () => {
             });
             assert.calledWith(sequelizeClientMock.define, 'jobs', {
                 id: {
-                    type: 'VARCHAR(40)',
-                    primaryKey: true
+                    type: 'UNSIGNED INTEGER',
+                    primaryKey: true,
+                    autoIncrement: true
                 },
                 name: {
-                    type: 'TEXT'
+                    type: 'TEXT',
+                    unique: 'uniquerow'
                 }
             });
             assert.calledWith(sequelizeClientMock.define, 'pipelines', {
                 id: {
-                    type: 'VARCHAR(40)',
-                    primaryKey: true
+                    type: 'UNSIGNED INTEGER',
+                    primaryKey: true,
+                    autoIncrement: true
                 },
                 str: {
-                    type: 'TEXT'
+                    type: 'TEXT',
+                    unique: 'uniquerow'
                 },
                 date: {
                     type: 'DATE'
                 },
                 num: {
-                    type: 'DECIMAL'
+                    type: 'DECIMAL',
+                    unique: 'uniquerow'
                 },
                 bool: {
                     type: 'BOOLEAN'
@@ -206,6 +226,41 @@ describe('index test', () => {
             });
         });
 
+        it('gets data without id', () => {
+            const testParams = {
+                table: 'pipelines',
+                params: {
+                    field1: 'value1',
+                    field2: 'value2'
+                }
+            };
+            const testData = {
+                id: 'data',
+                key: 'value',
+                arr: '[1,2,3]',
+                obj: '{"a":"b"}',
+                bar: null
+            };
+            const realData = {
+                id: 'data',
+                key: 'value',
+                arr: [1, 2, 3],
+                obj: {
+                    a: 'b'
+                }
+            };
+
+            sequelizeTableMock.findOne.resolves(responseMock);
+            responseMock.toJSON.returns(testData);
+
+            return datastore.get(testParams).then((data) => {
+                assert.deepEqual(data, realData);
+                assert.calledWith(sequelizeTableMock.findOne, {
+                    where: testParams.params
+                });
+            });
+        });
+
         it('gracefully understands that no one is returned when it does not exist', () => {
             sequelizeTableMock.findById.resolves(null);
 
@@ -260,26 +315,24 @@ describe('index test', () => {
                     a: 'b'
                 }
             };
+            const expectedRow = sequelizeRowMock;
 
-            sequelizeTableMock.create.resolves();
+            expectedRow.get.returns(expectedResult);
+            sequelizeTableMock.create.resolves(expectedRow);
 
             return datastore.save({
                 table: 'pipelines',
                 params: {
-                    id: 'someIdToPutHere',
-                    data: {
-                        key: 'value',
-                        arr: [1, 2, 3],
-                        obj: {
-                            a: 'b'
-                        }
+                    key: 'value',
+                    arr: [1, 2, 3],
+                    obj: {
+                        a: 'b'
                     }
                 }
             }).then((data) => {
                 assert.deepEqual(data, expectedResult);
                 assert.calledWith(sequelizeTableMock.create, {
                     key: 'value',
-                    id: 'someIdToPutHere',
                     arr: '[1,2,3]',
                     obj: '{"a":"b"}'
                 });
@@ -389,7 +442,7 @@ describe('index test', () => {
                 table: 'pipelines',
                 params: {
                     id,
-                    data: { targetKey: 'updatedValue' }
+                    targetKey: 'updatedValue'
                 }
             }).then((data) => {
                 assert.deepEqual(data, expectedResult);
