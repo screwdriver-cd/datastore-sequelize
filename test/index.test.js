@@ -82,7 +82,7 @@ describe('index test', function () {
         sequelizeMock.STRING = sinon.stub().withArgs(40).returns('VARCHAR(40)');
         sequelizeMock.TEXT = 'TEXT';
         sequelizeMock.DATE = 'DATE';
-        sequelizeMock.DECIMAL = 'DECIMAL';
+        sequelizeMock.DOUBLE = 'DOUBLE';
         sequelizeMock.INTEGER = {};
         sequelizeMock.INTEGER.UNSIGNED = 'UNSIGNED INTEGER';
         sequelizeMock.BOOLEAN = 'BOOLEAN';
@@ -152,7 +152,7 @@ describe('index test', function () {
                     type: 'DATE'
                 },
                 num: {
-                    type: 'DECIMAL',
+                    type: 'DOUBLE',
                     unique: 'uniquerow'
                 },
                 bool: {

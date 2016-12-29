@@ -100,7 +100,7 @@ function getSequelizeTypeFromJoi(dialect, type, rules) {
     case 'date':
         return Sequelize.DATE;
     case 'number':
-        return Sequelize.DECIMAL;
+        return Sequelize.DOUBLE;
     case 'boolean':
         return Sequelize.BOOLEAN;
     case 'binary':
