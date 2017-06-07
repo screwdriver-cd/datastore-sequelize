@@ -8,8 +8,6 @@ const joi = require('joi');
 
 sinon.assert.expose(assert, { prefix: '' });
 
-require('sinon-as-promised');
-
 describe('index test', function () {
     const dataSchemaMock = {
         models: {
