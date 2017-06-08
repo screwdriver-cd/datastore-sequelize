@@ -1,6 +1,6 @@
 {
   "name": "screwdriver-datastore-sequelize",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Datastore implementation for mysql, postgres, sqlite3, and mssql",
   "main": "index.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "Min Zhang <minzhang@andrew.cmu.edu>",
     "Noah Katzman <nbkatzman@gmail.com>",
     "Peter Peterson <jedipetey@gmail.com>",
+    "Reetika Rastogi <r3rastogi@gmail.com",
     "St. John Johnson <st.john.johnson@gmail.com",
     "Tiffany Kyi <tiffanykyi@gmail.com>"
   ],
