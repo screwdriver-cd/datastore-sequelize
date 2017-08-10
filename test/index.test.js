@@ -178,6 +178,7 @@ describe('index test', function () {
             });
             assert.calledWith(sequelizeClientMock.define, 'boo_jobs');
             assert.calledWith(sequelizeClientMock.define, 'boo_pipelines');
+            assert.isUndefined(sequelizeMock.lastCall.args[3].prefix);
         });
     });
 
