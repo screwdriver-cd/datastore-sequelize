@@ -125,13 +125,17 @@ class Squeakquel extends Datastore {
         super();
 
         config.logging = () => {};
+        this.prefix = config.prefix || '';
+
+        // It won't work if prefix is passed to Sequelize
+        delete config.prefix;
+
         this.client = new Sequelize(
             config.database || 'screwdriver',
             config.username,
             config.password,
             config
         );
-        this.prefix = config.prefix || '';
 
         this.tables = {};
         this.models = {};
