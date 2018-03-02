@@ -302,11 +302,14 @@ class Squeakquel extends Datastore {
     /**
      * Scan records in the datastore
      * @method scan
-     * @param  {Object}   config                Configuration object
-     * @param  {String}   config.table          Table name
-     * @param  {Object}   [config.params]       index => values to query on
-     * @param  {String}   [config.sort]         Sorting option based on GSI range key. Ascending or descending.
-     * @return {Promise}                        Resolves to an array of records
+     * @param  {Object}   config                    Configuration object
+     * @param  {String}   config.table              Table name
+     * @param  {Object}   [config.paginate]         Pagination parameters
+     * @param  {Number}   [config.paginate.count]   Number of items per page
+     * @param  {Number}   [config.paginate.page]    Specific page of the set to return
+     * @param  {Object}   [config.params]           index => values to query on
+     * @param  {String}   [config.sort]             Sorting option based on GSI range key. Ascending or descending.
+     * @return {Promise}                            Resolves to an array of records
      */
     _scan(config) {
         const table = this.tables[config.table];
@@ -318,6 +321,11 @@ class Squeakquel extends Datastore {
 
         if (!table) {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
+        }
+
+        if (config.paginate) {
+            findParams.limit = config.paginate.count;
+            findParams.offset = findParams.limit * (config.paginate.page - 1);
         }
 
         if (config.params && Object.keys(config.params).length > 0) {
