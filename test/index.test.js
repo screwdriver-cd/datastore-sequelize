@@ -560,39 +560,6 @@ describe('index test', function () {
             });
         });
 
-        it('scans a page of data', () => {
-            const dummyData = [];
-
-            for (let i = 1; i <= 30; i += 1) {
-                dummyData.push({
-                    id: `data${i}`,
-                    key: `value${i}`
-                });
-            }
-
-            const testData = dummyData.slice(11, 21);
-            const testInternal = testData.map(data => ({
-                toJSON: sinon.stub().returns(data)
-            }));
-
-            testParams.paginate = {
-                count: 10,
-                page: 2
-            };
-
-            sequelizeTableMock.findAll.resolves(testInternal);
-
-            return datastore.scan(testParams).then((data) => {
-                assert.deepEqual(data, testData);
-                assert.calledWith(sequelizeTableMock.findAll, {
-                    where: {},
-                    order: [['id', 'DESC']],
-                    limit: 10,
-                    offset: 10
-                });
-            });
-        });
-
         it('scans for some data with params', () => {
             const testData = [
                 {
