@@ -593,6 +593,44 @@ describe('index test', function () {
             });
         });
 
+        it('scans all the data and returns sorted by sortBy field', () => {
+            const testData = [
+                {
+                    id: 'data2',
+                    scmRepo: {
+                        name: 'A'
+                    },
+                    key: 'value2'
+                },
+                {
+                    id: 'data1',
+                    scmRepo: {
+                        name: 'B'
+                    },
+                    key: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.sortBy = 'scmRepo.name';
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {},
+                    order: [['scmRepo.name', 'DESC']]
+                });
+            });
+        });
+
         it('scans for some data with params', () => {
             const testData = [
                 {
