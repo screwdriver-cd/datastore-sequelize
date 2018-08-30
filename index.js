@@ -309,6 +309,7 @@ class Squeakquel extends Datastore {
      * @param  {Number}   [config.paginate.page]    Specific page of the set to return
      * @param  {Object}   [config.params]           index => values to query on
      * @param  {String}   [config.sort]             Sorting option based on GSI range key. Ascending or descending.
+     * @param  {String}   [config.sortBy]           Key to sort by; defaults to 'id'
      * @return {Promise}                            Resolves to an array of records
      */
     _scan(config) {
@@ -347,6 +348,10 @@ class Squeakquel extends Datastore {
                     sortKey = model.rangeKeys[indexIndex];
                 }
             });
+        }
+
+        if (config.sortBy) {
+            sortKey = config.sortBy;
         }
 
         if (config.sort === 'ascending') {
