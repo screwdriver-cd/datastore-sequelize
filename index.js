@@ -335,7 +335,11 @@ class Squeakquel extends Datastore {
 
                 if (Array.isArray(paramValue)) {
                     findParams.where[paramName] = {
-                        in: paramValue
+                        [Sequelize.Op.in]: paramValue
+                    };
+                } else if (paramName === 'search' && typeof paramValue === 'object') {
+                    findParams.where[paramValue.searchField] = {
+                        [Sequelize.Op.like]: paramValue.searchTerm
                     };
                 } else {
                     findParams.where[paramName] = paramValue;

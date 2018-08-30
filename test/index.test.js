@@ -87,6 +87,10 @@ describe('index test', function () {
         sequelizeMock.BLOB = 'BLOB';
         sequelizeMock.JSON = 'JSON';
         sequelizeMock.ARRAY = sinon.stub().returns('ARRAY');
+        sequelizeMock.Op = {
+            like: 'LIKE',
+            in: 'IN'
+        };
 
         responseMock = {
             toJSON: sinon.stub()
@@ -631,6 +635,45 @@ describe('index test', function () {
             });
         });
 
+        it('scans all the data and returns based on search terms', () => {
+            const testData = [
+                {
+                    id: 'data2',
+                    scmRepo: '{"name": "Alpha"}',
+                    key: 'value2'
+                },
+                {
+                    id: 'data1',
+                    scmRepo: '{"name": "Beta"}',
+                    key: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.params = {
+                search: {
+                    searchField: 'scmRepo',
+                    searchTerm: '%name%A%'
+                }
+            };
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: { scmRepo: { LIKE: '%name%A%' } },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
         it('scans for some data with params', () => {
             const testData = [
                 {
@@ -664,7 +707,7 @@ describe('index test', function () {
                     where: {
                         foo: 'bar',
                         baz: {
-                            in: [1, 2, 3]
+                            IN: [1, 2, 3]
                         }
                     },
                     order: [['id', 'DESC']]
@@ -705,7 +748,7 @@ describe('index test', function () {
                     where: {
                         str: 'bar',
                         baz: {
-                            in: [1, 2, 3]
+                            IN: [1, 2, 3]
                         }
                     },
                     order: [['id', 'DESC']]
@@ -747,7 +790,7 @@ describe('index test', function () {
                     where: {
                         name: 'bar',
                         baz: {
-                            in: [1, 2, 3]
+                            IN: [1, 2, 3]
                         }
                     },
                     order: [['name', 'DESC']]
