@@ -21,7 +21,8 @@ describe('index test', function () {
                     bin: joi.binary(),
                     arr: joi.array(),
                     obj: joi.object(),
-                    any: joi.any()
+                    any: joi.any(),
+                    scmRepo: joi.object()
                 }),
                 tableName: 'pipelines',
                 keys: ['num', 'str'],
@@ -171,6 +172,9 @@ describe('index test', function () {
                 },
                 any: {
                     type: null
+                },
+                scmRepo: {
+                    type: 'TEXT'
                 }
             });
         });
@@ -601,16 +605,12 @@ describe('index test', function () {
             const testData = [
                 {
                     id: 'data2',
-                    scmRepo: {
-                        name: 'A'
-                    },
+                    str: 'A',
                     key: 'value2'
                 },
                 {
                     id: 'data1',
-                    scmRepo: {
-                        name: 'B'
-                    },
+                    str: 'B',
                     key: 'value1'
                 }
             ];
@@ -624,13 +624,13 @@ describe('index test', function () {
             ];
 
             sequelizeTableMock.findAll.resolves(testInternal);
-            testParams.sortBy = 'scmRepo.name';
+            testParams.sortBy = 'str';
 
             return datastore.scan(testParams).then((data) => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
-                    order: [['scmRepo.name', 'DESC']]
+                    order: [['str', 'DESC']]
                 });
             });
         });
@@ -660,8 +660,8 @@ describe('index test', function () {
             sequelizeTableMock.findAll.resolves(testInternal);
             testParams.params = {
                 search: {
-                    searchField: 'scmRepo',
-                    searchTerm: '%name%A%'
+                    field: 'scmRepo',
+                    term: '%name%A%'
                 }
             };
 
@@ -669,6 +669,45 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: { scmRepo: { LIKE: '%name%A%' } },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it('scans all the data and skips search if terms do not exist in schema', () => {
+            const testData = [
+                {
+                    id: 'data2',
+                    scmRepo: '{"name": "Alpha"}',
+                    key: 'value2'
+                },
+                {
+                    id: 'data1',
+                    scmRepo: '{"name": "Beta"}',
+                    key: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.params = {
+                search: {
+                    field: 'banana',
+                    term: '%name%A%'
+                }
+            };
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: { },
                     order: [['id', 'DESC']]
                 });
             });

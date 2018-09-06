@@ -308,6 +308,9 @@ class Squeakquel extends Datastore {
      * @param  {Number}   [config.paginate.count]   Number of items per page
      * @param  {Number}   [config.paginate.page]    Specific page of the set to return
      * @param  {Object}   [config.params]           index => values to query on
+     * @param  {Object}   [config.search]           Search parameters
+     * @param  {String}   [config.search.field]     Search field (eg: jobName)
+     * @param  {String}   [config.search.term]      Search term (eg: main)
      * @param  {String}   [config.sort]             Sorting option based on GSI range key. Ascending or descending.
      * @param  {String}   [config.sortBy]           Key to sort by; defaults to 'id'
      * @return {Promise}                            Resolves to an array of records
@@ -338,9 +341,13 @@ class Squeakquel extends Datastore {
                         [Sequelize.Op.in]: paramValue
                     };
                 } else if (paramName === 'search' && typeof paramValue === 'object') {
-                    findParams.where[paramValue.searchField] = {
-                        [Sequelize.Op.like]: paramValue.searchTerm
-                    };
+                    const validSearchFields = Object.keys(model.base.describe().children);
+
+                    if (validSearchFields.includes(paramValue.field)) {
+                        findParams.where[paramValue.field] = {
+                            [Sequelize.Op.like]: paramValue.term
+                        };
+                    }
                 } else {
                     findParams.where[paramName] = paramValue;
                 }
