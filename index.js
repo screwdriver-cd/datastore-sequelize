@@ -327,6 +327,8 @@ class Squeakquel extends Datastore {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
 
+        const validFields = Object.keys(model.base.describe().children);
+
         if (config.paginate) {
             findParams.limit = config.paginate.count;
             findParams.offset = findParams.limit * (config.paginate.page - 1);
@@ -341,9 +343,7 @@ class Squeakquel extends Datastore {
                         [Sequelize.Op.in]: paramValue
                     };
                 } else if (paramName === 'search' && typeof paramValue === 'object') {
-                    const validSearchFields = Object.keys(model.base.describe().children);
-
-                    if (validSearchFields.includes(paramValue.field)) {
+                    if (validFields.includes(paramValue.field)) {
                         findParams.where[paramValue.field] = {
                             [Sequelize.Op.like]: paramValue.term
                         };
@@ -361,7 +361,7 @@ class Squeakquel extends Datastore {
             });
         }
 
-        if (config.sortBy) {
+        if (config.sortBy && validFields.includes(config.sortBy)) {
             sortKey = config.sortBy;
         }
 
