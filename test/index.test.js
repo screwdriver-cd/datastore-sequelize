@@ -635,7 +635,7 @@ describe('index test', function () {
             });
         });
 
-        it('scans all the data and returns based on search terms', () => {
+        it('scans all the data and returns based on search values', () => {
             const testData = [
                 {
                     id: 'data2',
@@ -661,7 +661,7 @@ describe('index test', function () {
             testParams.params = {
                 search: {
                     field: 'scmRepo',
-                    term: '%name%A%'
+                    keyword: '%name%A%'
                 }
             };
 
@@ -674,7 +674,7 @@ describe('index test', function () {
             });
         });
 
-        it('scans all the data and skips search if terms do not exist in schema', () => {
+        it('scans all the data and skips search if field does not exist in schema', () => {
             const testData = [
                 {
                     id: 'data2',
@@ -700,7 +700,7 @@ describe('index test', function () {
             testParams.params = {
                 search: {
                     field: 'banana',
-                    term: '%name%A%'
+                    keyword: '%name%A%'
                 }
             };
 
