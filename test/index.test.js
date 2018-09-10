@@ -674,29 +674,7 @@ describe('index test', function () {
             });
         });
 
-        it('scans all the data and skips search if field does not exist in schema', () => {
-            const testData = [
-                {
-                    id: 'data2',
-                    scmRepo: '{"name": "Alpha"}',
-                    key: 'value2'
-                },
-                {
-                    id: 'data1',
-                    scmRepo: '{"name": "Beta"}',
-                    key: 'value1'
-                }
-            ];
-            const testInternal = [
-                {
-                    toJSON: sinon.stub().returns(testData[0])
-                },
-                {
-                    toJSON: sinon.stub().returns(testData[1])
-                }
-            ];
-
-            sequelizeTableMock.findAll.resolves(testInternal);
+        it('throws error if search field does not exist in schema', () => {
             testParams.params = {
                 search: {
                     field: 'banana',
@@ -704,12 +682,22 @@ describe('index test', function () {
                 }
             };
 
-            return datastore.scan(testParams).then((data) => {
-                assert.deepEqual(data, testData);
-                assert.calledWith(sequelizeTableMock.findAll, {
-                    where: { },
-                    order: [['id', 'DESC']]
-                });
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid search field "banana"/);
+            });
+        });
+
+        it('throws error if sortBy does not exist in schema', () => {
+            testParams.sortBy = 'banana';
+
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid sortBy "banana"/);
             });
         });
 

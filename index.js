@@ -343,11 +343,12 @@ class Squeakquel extends Datastore {
                         [Sequelize.Op.in]: paramValue
                     };
                 } else if (paramName === 'search' && typeof paramValue === 'object') {
-                    if (validFields.includes(paramValue.field)) {
-                        findParams.where[paramValue.field] = {
-                            [Sequelize.Op.like]: paramValue.keyword
-                        };
+                    if (!validFields.includes(paramValue.field)) {
+                        throw new Error(`Invalid search field "${paramValue.field}"`);
                     }
+                    findParams.where[paramValue.field] = {
+                        [Sequelize.Op.like]: paramValue.keyword
+                    };
                 } else {
                     findParams.where[paramName] = paramValue;
                 }
@@ -361,7 +362,10 @@ class Squeakquel extends Datastore {
             });
         }
 
-        if (config.sortBy && validFields.includes(config.sortBy)) {
+        if (config.sortBy) {
+            if (!validFields.includes(config.sortBy)) {
+                return Promise.reject(new Error(`Invalid sortBy "${config.sortBy}"`));
+            }
             sortKey = config.sortBy;
         }
 
