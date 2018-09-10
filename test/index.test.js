@@ -21,7 +21,8 @@ describe('index test', function () {
                     bin: joi.binary(),
                     arr: joi.array(),
                     obj: joi.object(),
-                    any: joi.any()
+                    any: joi.any(),
+                    scmRepo: joi.object()
                 }),
                 tableName: 'pipelines',
                 keys: ['num', 'str'],
@@ -87,6 +88,10 @@ describe('index test', function () {
         sequelizeMock.BLOB = 'BLOB';
         sequelizeMock.JSON = 'JSON';
         sequelizeMock.ARRAY = sinon.stub().returns('ARRAY');
+        sequelizeMock.Op = {
+            like: 'LIKE',
+            in: 'IN'
+        };
 
         responseMock = {
             toJSON: sinon.stub()
@@ -167,6 +172,9 @@ describe('index test', function () {
                 },
                 any: {
                     type: null
+                },
+                scmRepo: {
+                    type: 'TEXT'
                 }
             });
         });
@@ -597,16 +605,12 @@ describe('index test', function () {
             const testData = [
                 {
                     id: 'data2',
-                    scmRepo: {
-                        name: 'A'
-                    },
+                    str: 'A',
                     key: 'value2'
                 },
                 {
                     id: 'data1',
-                    scmRepo: {
-                        name: 'B'
-                    },
+                    str: 'B',
                     key: 'value1'
                 }
             ];
@@ -620,14 +624,80 @@ describe('index test', function () {
             ];
 
             sequelizeTableMock.findAll.resolves(testInternal);
-            testParams.sortBy = 'scmRepo.name';
+            testParams.sortBy = 'str';
 
             return datastore.scan(testParams).then((data) => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
-                    order: [['scmRepo.name', 'DESC']]
+                    order: [['str', 'DESC']]
                 });
+            });
+        });
+
+        it('scans all the data and returns based on search values', () => {
+            const testData = [
+                {
+                    id: 'data2',
+                    scmRepo: '{"name": "Alpha"}',
+                    key: 'value2'
+                },
+                {
+                    id: 'data1',
+                    scmRepo: '{"name": "Beta"}',
+                    key: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.params = {
+                search: {
+                    field: 'scmRepo',
+                    keyword: '%name%A%'
+                }
+            };
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: { scmRepo: { LIKE: '%name%A%' } },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it('throws error if search field does not exist in schema', () => {
+            testParams.params = {
+                search: {
+                    field: 'banana',
+                    keyword: '%name%A%'
+                }
+            };
+
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid search field "banana"/);
+            });
+        });
+
+        it('throws error if sortBy does not exist in schema', () => {
+            testParams.sortBy = 'banana';
+
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid sortBy "banana"/);
             });
         });
 
@@ -664,7 +734,7 @@ describe('index test', function () {
                     where: {
                         foo: 'bar',
                         baz: {
-                            in: [1, 2, 3]
+                            IN: [1, 2, 3]
                         }
                     },
                     order: [['id', 'DESC']]
@@ -705,7 +775,7 @@ describe('index test', function () {
                     where: {
                         str: 'bar',
                         baz: {
-                            in: [1, 2, 3]
+                            IN: [1, 2, 3]
                         }
                     },
                     order: [['id', 'DESC']]
@@ -747,7 +817,7 @@ describe('index test', function () {
                     where: {
                         name: 'bar',
                         baz: {
-                            in: [1, 2, 3]
+                            IN: [1, 2, 3]
                         }
                     },
                     order: [['name', 'DESC']]
