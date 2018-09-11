@@ -658,11 +658,9 @@ describe('index test', function () {
             ];
 
             sequelizeTableMock.findAll.resolves(testInternal);
-            testParams.params = {
-                search: {
-                    field: 'scmRepo',
-                    keyword: '%name%A%'
-                }
+            testParams.search = {
+                field: 'scmRepo',
+                keyword: '%name%A%'
             };
 
             return datastore.scan(testParams).then((data) => {
@@ -675,11 +673,9 @@ describe('index test', function () {
         });
 
         it('throws error if search field does not exist in schema', () => {
-            testParams.params = {
-                search: {
-                    field: 'banana',
-                    keyword: '%name%A%'
-                }
+            testParams.search = {
+                field: 'banana',
+                keyword: '%name%A%'
             };
 
             return datastore.scan(testParams).then(() => {
