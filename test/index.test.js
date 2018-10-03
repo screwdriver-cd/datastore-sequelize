@@ -89,9 +89,12 @@ describe('index test', function () {
         sequelizeMock.JSON = 'JSON';
         sequelizeMock.ARRAY = sinon.stub().returns('ARRAY');
         sequelizeMock.Op = {
+            in: 'IN',
             like: 'LIKE',
-            in: 'IN'
+            or: 'OR'
         };
+        sequelizeMock.col = sinon.stub().returns('col');
+        sequelizeMock.fn = sinon.stub().returns('distinct');
 
         responseMock = {
             toJSON: sinon.stub()
@@ -672,6 +675,56 @@ describe('index test', function () {
             });
         });
 
+        it('scans all the data and returns based on search values with multiple fields', () => {
+            const testData = [
+                {
+                    id: 'data3',
+                    namespace: 'foo',
+                    name: 'value3'
+                },
+                {
+                    id: 'data2',
+                    namespace: 'screwdriver',
+                    name: 'foo'
+                },
+                {
+                    id: 'data1',
+                    namespace: 'fool',
+                    name: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[2])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.search = {
+                field: ['namespace', 'name'],
+                keyword: '%foo%'
+            };
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        OR: [
+                            { namespace: { LIKE: '%foo%' } },
+                            { name: { LIKE: '%foo%' } }
+                        ]
+                    },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
         it('throws error if search field does not exist in schema', () => {
             testParams.search = {
                 field: 'banana',
@@ -733,6 +786,46 @@ describe('index test', function () {
                             IN: [1, 2, 3]
                         }
                     },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it('scans for some data with distinct params', () => {
+            const testData = [
+                {
+                    id: 'data1',
+                    namespace: 'tools',
+                    key: 'value1'
+                },
+                {
+                    id: 'data1',
+                    namespace: 'screwdriver',
+                    key: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            testParams.params = {
+                distinct: 'namespace'
+            };
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {},
+                    attributes: [
+                        [sequelizeMock.fn('DISTINCT', sequelizeMock.col('namespace')), 'namespace']
+                    ],
                     order: [['id', 'DESC']]
                 });
             });
