@@ -729,149 +729,54 @@ describe('index test', function () {
             });
         });
 
-        it('skips adding field if search field does not exist in schema', () => {
-            const testData = [
-                {
-                    id: 'data3',
-                    namespace: 'foo',
-                    name: 'value3'
-                },
-                {
-                    id: 'data2',
-                    namespace: 'screwdriver',
-                    name: 'foo'
-                },
-                {
-                    id: 'data1',
-                    namespace: 'fool',
-                    name: 'value1'
-                }
-            ];
-            const testInternal = [
-                {
-                    toJSON: sinon.stub().returns(testData[0])
-                },
-                {
-                    toJSON: sinon.stub().returns(testData[1])
-                },
-                {
-                    toJSON: sinon.stub().returns(testData[2])
-                }
-            ];
+        it('throws error if search field does not exist in schema', () => {
+            testParams.search = {
+                field: 'banana',
+                keyword: '%foo%'
+            };
 
-            sequelizeTableMock.findAll.resolves(testInternal);
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid search field "banana"/);
+            });
+        });
+
+        it('throws error if search field in field array does not exist in schema', () => {
             testParams.search = {
                 field: ['namespace', 'name', 'banana'],
                 keyword: '%foo%'
             };
 
             return datastore.scan(testParams).then(() => {
-                assert.calledWith(sequelizeTableMock.findAll, {
-                    where: {
-                        OR: [
-                            { namespace: { LIKE: '%foo%' } },
-                            { name: { LIKE: '%foo%' } }
-                        ]
-                    },
-                    order: [['id', 'DESC']]
-                });
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid search field "banana"/);
             });
         });
 
-        it('skips search if search field does not exist in schema', () => {
-            const testData = [
-                {
-                    id: 'data3',
-                    namespace: 'foo',
-                    name: 'value3'
-                },
-                {
-                    id: 'data2',
-                    namespace: 'screwdriver',
-                    name: 'foo'
-                },
-                {
-                    id: 'data1',
-                    namespace: 'fool',
-                    name: 'value1'
-                }
-            ];
-            const testInternal = [
-                {
-                    toJSON: sinon.stub().returns(testData[0])
-                },
-                {
-                    toJSON: sinon.stub().returns(testData[1])
-                },
-                {
-                    toJSON: sinon.stub().returns(testData[2])
-                }
-            ];
-
-            sequelizeTableMock.findAll.resolves(testInternal);
-            testParams.search = {
-                field: 'banana',
-                keyword: '%name%A%'
-            };
-
-            return datastore.scan(testParams).then(() => {
-                assert.calledWith(sequelizeTableMock.findAll, {
-                    where: {},
-                    order: [['id', 'DESC']]
-                });
-            });
-        });
-
-        it('skips sortBy if it does not exist in schema', () => {
-            const testData = [
-                {
-                    id: 'data3',
-                    namespace: 'foo',
-                    name: 'value3'
-                },
-                {
-                    id: 'data2',
-                    namespace: 'screwdriver',
-                    name: 'foo'
-                },
-                {
-                    id: 'data1',
-                    namespace: 'fool',
-                    name: 'value1'
-                }
-            ];
-            const testInternal = [
-                {
-                    toJSON: sinon.stub().returns(testData[0])
-                },
-                {
-                    toJSON: sinon.stub().returns(testData[1])
-                },
-                {
-                    toJSON: sinon.stub().returns(testData[2])
-                }
-            ];
-
-            sequelizeTableMock.findAll.resolves(testInternal);
+        it('throws error if sortBy does not exist in schema', () => {
             testParams.sortBy = 'banana';
 
             return datastore.scan(testParams).then(() => {
-                assert.calledWith(sequelizeTableMock.findAll, {
-                    where: {},
-                    order: [['id', 'DESC']]
-                });
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid sortBy "banana"/);
             });
         });
 
         it('scans for some data with params', () => {
             const testData = [
                 {
-                    id: 'data1',
-                    key: 'value1'
+                    id: 1,
+                    name: 'foo'
                 },
                 {
-                    id: 'data2',
-                    key: 'value2'
+                    id: 2,
+                    name: 'foo'
                 }
             ];
             const testInternal = [
@@ -884,8 +789,8 @@ describe('index test', function () {
             ];
 
             testParams.params = {
-                foo: 'bar',
-                baz: [1, 2, 3]
+                name: 'foo',
+                id: [1, 2, 3]
             };
 
             sequelizeTableMock.findAll.resolves(testInternal);
@@ -894,13 +799,26 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {
-                        foo: 'bar',
-                        baz: {
+                        name: 'foo',
+                        id: {
                             IN: [1, 2, 3]
                         }
                     },
                     order: [['id', 'DESC']]
                 });
+            });
+        });
+
+        it('throws an error when the param is not valid', () => {
+            testParams.params = {
+                foo: 'banana'
+            };
+
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid param "foo"/);
             });
         });
 
@@ -941,6 +859,19 @@ describe('index test', function () {
                     ],
                     order: [['id', 'DESC']]
                 });
+            });
+        });
+
+        it('throws an error when the distinct field is not valid', () => {
+            testParams.params = {
+                distinct: 'banana'
+            };
+
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid distinct field "banana"/);
             });
         });
 

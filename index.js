@@ -300,20 +300,31 @@ class Squeakquel extends Datastore {
     }
 
     /**
+     * Returns whether the field is a valid field in the table model or not
+     * @param  {Array}      validFields List of valid fields
+     * @param  {String}     field       Field to check
+     * @return {Boolean}                Returns true if field is invalid
+     */
+    _fieldInvalid({ validFields, field }) {
+        return !validFields.includes(field);
+    }
+
+    /**
      * Scan records in the datastore
      * @method scan
-     * @param  {Object}   config                    Configuration object
-     * @param  {String}   config.table              Table name
-     * @param  {Object}   [config.paginate]         Pagination parameters
-     * @param  {Number}   [config.paginate.count]   Number of items per page
-     * @param  {Number}   [config.paginate.page]    Specific page of the set to return
-     * @param  {Object}   [config.params]           index => values to query on
-     * @param  {Object}   [config.search]           Search parameters
-     * @param  {String}   [config.search.field]     Search field (eg: jobName)
-     * @param  {String}   [config.search.keyword]   Search keyword (eg: main)
-     * @param  {String}   [config.sort]             Sorting option based on GSI range key. Ascending or descending.
-     * @param  {String}   [config.sortBy]           Key to sort by; defaults to 'id'
-     * @return {Promise}                            Resolves to an array of records
+     * @param  {Object}         config                    Configuration object
+     * @param  {String}         config.table              Table name
+     * @param  {Object}         [config.paginate]         Pagination parameters
+     * @param  {Number}         [config.paginate.count]   Number of items per page
+     * @param  {Number}         [config.paginate.page]    Specific page of the set to return
+     * @param  {Object}         [config.params]           index => values to query on
+     * @param  {String}         [config.params.distinct]  Field to return distinct rows on
+     * @param  {Object}         [config.search]           Search parameters
+     * @param  {String|Array}   [config.search.field]     Search field (eg: jobName)
+     * @param  {String}         [config.search.keyword]   Search keyword (eg: main)
+     * @param  {String}         [config.sort]             Sorting option based on GSI range key. Ascending or descending.
+     * @param  {String}         [config.sortBy]           Key to sort by; defaults to 'id'
+     * @return {Promise}                                  Resolves to an array of records
      */
     _scan(config) {
         const table = this.tables[config.table];
@@ -344,10 +355,16 @@ class Squeakquel extends Datastore {
                     };
                 // Return distinct rows
                 } else if (paramName === 'distinct') {
+                    if (this._fieldInvalid({ validFields, field: paramValue })) {
+                        throw new Error(`Invalid distinct field "${paramValue}"`);
+                    }
                     findParams.attributes = [[
                         Sequelize.fn('DISTINCT', Sequelize.col(paramValue)), paramValue
                     ]];
                 } else {
+                    if (this._fieldInvalid({ validFields, field: paramName })) {
+                        throw new Error(`Invalid param "${paramName}"`);
+                    }
                     findParams.where[paramName] = paramValue;
                 }
 
@@ -368,21 +385,28 @@ class Squeakquel extends Datastore {
                 };
 
                 config.search.field.forEach((field) => {
-                    if (validFields.includes(field)) {
-                        findParams.where[Sequelize.Op.or].push({
-                            [field]: { [Sequelize.Op.like]: config.search.keyword }
-                        });
+                    if (this._fieldInvalid({ validFields, field })) {
+                        throw new Error(`Invalid search field "${field}"`);
                     }
+                    findParams.where[Sequelize.Op.or].push({
+                        [field]: { [Sequelize.Op.like]: config.search.keyword }
+                    });
                 });
             // If field is string, search using field directly
-            } else if (validFields.includes(config.search.field)) {
+            } else {
+                if (this._fieldInvalid({ validFields, field: config.search.field })) {
+                    throw new Error(`Invalid search field "${config.search.field}"`);
+                }
                 findParams.where[config.search.field] = {
                     [Sequelize.Op.like]: config.search.keyword
                 };
             }
         }
 
-        if (config.sortBy && validFields.includes(config.sortBy)) {
+        if (config.sortBy) {
+            if (this._fieldInvalid({ validFields, field: config.sortBy })) {
+                return Promise.reject(new Error(`Invalid sortBy "${config.sortBy}"`));
+            }
             sortKey = config.sortBy;
         }
 
