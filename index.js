@@ -342,6 +342,7 @@ class Squeakquel extends Datastore {
                     findParams.where[paramName] = {
                         [Sequelize.Op.in]: paramValue
                     };
+                // Return distinct rows
                 } else if (paramName === 'distinct') {
                     findParams.attributes = [[
                         Sequelize.fn('DISTINCT', Sequelize.col(paramValue)), paramValue
@@ -367,28 +368,21 @@ class Squeakquel extends Datastore {
                 };
 
                 config.search.field.forEach((field) => {
-                    findParams.where[Sequelize.Op.or].push(
-                        {
-                            [field]: {
-                                [Sequelize.Op.like]: config.search.keyword
-                            }
+                    if (validFields.includes(field)) {
+                        findParams.where[Sequelize.Op.or].push({
+                            [field]: { [Sequelize.Op.like]: config.search.keyword }
                         });
+                    }
                 });
-            } else {
-                if (!validFields.includes(config.search.field)) {
-                    return Promise.reject(
-                        new Error(`Invalid search field "${config.search.field}"`));
-                }
+            // If field is string, search using field directly
+            } else if (validFields.includes(config.search.field)) {
                 findParams.where[config.search.field] = {
                     [Sequelize.Op.like]: config.search.keyword
                 };
             }
         }
 
-        if (config.sortBy) {
-            if (!validFields.includes(config.sortBy)) {
-                return Promise.reject(new Error(`Invalid sortBy "${config.sortBy}"`));
-            }
+        if (config.sortBy && validFields.includes(config.sortBy)) {
             sortKey = config.sortBy;
         }
 
