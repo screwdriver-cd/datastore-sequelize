@@ -22,7 +22,8 @@ describe('index test', function () {
                     arr: joi.array(),
                     obj: joi.object(),
                     any: joi.any(),
-                    scmRepo: joi.object()
+                    namespace: joi.string(),
+                    name: joi.string()
                 }),
                 tableName: 'pipelines',
                 keys: ['num', 'str'],
@@ -89,9 +90,12 @@ describe('index test', function () {
         sequelizeMock.JSON = 'JSON';
         sequelizeMock.ARRAY = sinon.stub().returns('ARRAY');
         sequelizeMock.Op = {
+            in: 'IN',
             like: 'LIKE',
-            in: 'IN'
+            or: 'OR'
         };
+        sequelizeMock.col = sinon.stub().returns('col');
+        sequelizeMock.fn = sinon.stub().returns('distinct');
 
         responseMock = {
             toJSON: sinon.stub()
@@ -173,7 +177,10 @@ describe('index test', function () {
                 any: {
                     type: null
                 },
-                scmRepo: {
+                namespace: {
+                    type: 'TEXT'
+                },
+                name: {
                     type: 'TEXT'
                 }
             });
@@ -639,12 +646,12 @@ describe('index test', function () {
             const testData = [
                 {
                     id: 'data2',
-                    scmRepo: '{"name": "Alpha"}',
+                    name: 'food',
                     key: 'value2'
                 },
                 {
                     id: 'data1',
-                    scmRepo: '{"name": "Beta"}',
+                    name: 'foodie',
                     key: 'value1'
                 }
             ];
@@ -659,14 +666,64 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.resolves(testInternal);
             testParams.search = {
-                field: 'scmRepo',
-                keyword: '%name%A%'
+                field: 'name',
+                keyword: '%foo%'
             };
 
             return datastore.scan(testParams).then((data) => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
-                    where: { scmRepo: { LIKE: '%name%A%' } },
+                    where: { name: { LIKE: '%foo%' } },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it('scans all the data and returns based on search values with multiple fields', () => {
+            const testData = [
+                {
+                    id: 'data3',
+                    namespace: 'foo',
+                    name: 'value3'
+                },
+                {
+                    id: 'data2',
+                    namespace: 'screwdriver',
+                    name: 'foo'
+                },
+                {
+                    id: 'data1',
+                    namespace: 'fool',
+                    name: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[2])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.search = {
+                field: ['namespace', 'name'],
+                keyword: '%foo%'
+            };
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        OR: [
+                            { namespace: { LIKE: '%foo%' } },
+                            { name: { LIKE: '%foo%' } }
+                        ]
+                    },
                     order: [['id', 'DESC']]
                 });
             });
@@ -675,7 +732,21 @@ describe('index test', function () {
         it('throws error if search field does not exist in schema', () => {
             testParams.search = {
                 field: 'banana',
-                keyword: '%name%A%'
+                keyword: '%foo%'
+            };
+
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid search field "banana"/);
+            });
+        });
+
+        it('throws error if search field in field array does not exist in schema', () => {
+            testParams.search = {
+                field: ['namespace', 'name', 'banana'],
+                keyword: '%foo%'
             };
 
             return datastore.scan(testParams).then(() => {
@@ -700,12 +771,12 @@ describe('index test', function () {
         it('scans for some data with params', () => {
             const testData = [
                 {
-                    id: 'data1',
-                    key: 'value1'
+                    id: 1,
+                    name: 'foo'
                 },
                 {
-                    id: 'data2',
-                    key: 'value2'
+                    id: 2,
+                    name: 'foo'
                 }
             ];
             const testInternal = [
@@ -718,8 +789,8 @@ describe('index test', function () {
             ];
 
             testParams.params = {
-                foo: 'bar',
-                baz: [1, 2, 3]
+                name: 'foo',
+                id: [1, 2, 3]
             };
 
             sequelizeTableMock.findAll.resolves(testInternal);
@@ -728,13 +799,79 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {
-                        foo: 'bar',
-                        baz: {
+                        name: 'foo',
+                        id: {
                             IN: [1, 2, 3]
                         }
                     },
                     order: [['id', 'DESC']]
                 });
+            });
+        });
+
+        it('throws an error when the param is not valid', () => {
+            testParams.params = {
+                foo: 'banana'
+            };
+
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid param "foo"/);
+            });
+        });
+
+        it('scans for some data with distinct params', () => {
+            const testData = [
+                {
+                    id: 'data1',
+                    namespace: 'tools',
+                    key: 'value1'
+                },
+                {
+                    id: 'data1',
+                    namespace: 'screwdriver',
+                    key: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            testParams.params = {
+                distinct: 'namespace'
+            };
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {},
+                    attributes: [
+                        [sequelizeMock.fn('DISTINCT', sequelizeMock.col('namespace')), 'namespace']
+                    ],
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it('throws an error when the distinct field is not valid', () => {
+            testParams.params = {
+                distinct: 'banana'
+            };
+
+            return datastore.scan(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid distinct field "banana"/);
             });
         });
 
