@@ -41,7 +41,7 @@
     "chai": "^4.2.0",
     "eslint": "^4.19.1",
     "eslint-config-screwdriver": "^3.0.1",
-    "jenkins-mocha": "^4.1.2",
+    "jenkins-mocha": "^6.0.0",
     "joi": "^13.7.0",
     "mockery": "^2.0.0",
     "sinon": "^2.3.2"
@@ -50,7 +50,7 @@
     "mysql2": "^1.6.1",
     "pg": "^6.2.3",
     "pg-hstore": "^2.3.2",
-    "screwdriver-data-schema": "^18.32.7",
+    "screwdriver-data-schema": "^18.35.1",
     "screwdriver-datastore-base": "^3.0.7",
     "sequelize": "^4.39.0",
     "sqlite3": "^4.0.2"
