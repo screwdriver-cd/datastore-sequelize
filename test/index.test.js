@@ -958,6 +958,47 @@ describe('index test', function () {
             });
         });
 
+        it('scan and return grouped data with excluded field(s)', () => {
+            const testData = [
+                {
+                    id: 'data1',
+                    key: 'value1'
+                },
+                {
+                    id: 'data2',
+                    key: 'value2'
+                },
+                {
+                    id: 'data3',
+                    key: 'value2'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns({ key: 'value1' })
+                },
+                {
+                    toJSON: sinon.stub().returns({ key: 'value2' })
+                }
+            ];
+
+            testParams.table = 'jobs';
+            testParams.exclude = ['id'];
+            testParams.groupBy = ['key'];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+
+            return datastore.scan(testParams).then((data) => {
+                assert.notDeepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    attributes: { exclude: ['id'] },
+                    group: ['key'],
+                    where: {},
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
         it('fails when given an unknown table name', () => {
             sequelizeTableMock.findAll.rejects(new Error('cannot find entries in table'));
 

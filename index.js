@@ -313,7 +313,9 @@ class Squeakquel extends Datastore {
      * Scan records in the datastore
      * @method scan
      * @param  {Object}         config                    Configuration object
-     * @param  {String}         config.table              Table name
+     * @param  {Array<String>}  [config.exclude]          Attribute(s) to discard
+     * @param  {Array<String>}  [config.groupBy]          Attribute(s) to group rows by
+     * @param  {String}         [config.table]            Table name
      * @param  {Object}         [config.paginate]         Pagination parameters
      * @param  {Number}         [config.paginate.count]   Number of items per page
      * @param  {Number}         [config.paginate.page]    Specific page of the set to return
@@ -414,6 +416,15 @@ class Squeakquel extends Datastore {
             findParams.order = [[sortKey, 'ASC']];
         } else {
             findParams.order = [[sortKey, 'DESC']];
+        }
+
+        if (Array.isArray(config.exclude)) {
+            findParams.attributes = findParams.attributes || {};
+            findParams.attributes.exclude = [...config.exclude];
+        }
+
+        if (Array.isArray(config.groupBy)) {
+            findParams.group = [...config.groupBy];
         }
 
         return table.findAll(findParams)
