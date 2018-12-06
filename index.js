@@ -332,7 +332,8 @@ class Squeakquel extends Datastore {
         const table = this.tables[config.table];
         const model = this.models[config.table];
         const findParams = {
-            where: {}
+            where: {},
+            attributes: {}
         };
         let sortKey = 'id';
 
@@ -360,7 +361,7 @@ class Squeakquel extends Datastore {
                     if (this._fieldInvalid({ validFields, field: paramValue })) {
                         throw new Error(`Invalid distinct field "${paramValue}"`);
                     }
-                    findParams.attributes = [[
+                    findParams.attributes.include = [[
                         Sequelize.fn('DISTINCT', Sequelize.col(paramValue)), paramValue
                     ]];
                 } else {
@@ -419,11 +420,23 @@ class Squeakquel extends Datastore {
         }
 
         if (Array.isArray(config.exclude)) {
-            findParams.attributes = findParams.attributes || {};
             findParams.attributes.exclude = [...config.exclude];
         }
 
         if (Array.isArray(config.groupBy)) {
+            let includedFields = validFields;
+
+            if (findParams.attributes.exclude) {
+                includedFields = includedFields.filter(f =>
+                    !findParams.attributes.exclude.includes(f)
+                );
+            }
+
+            // every other selected field must be aggregated so database engine won't complain
+            // use "MAX" since the nature of this table is append-only
+            findParams.attributes.include = includedFields.map(field =>
+                Sequelize.fn('MAX', Sequelize.col(field))
+            );
             findParams.group = [...config.groupBy];
         }
 
