@@ -537,7 +537,6 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
-                    attributes: {},
                     order: [['id', 'DESC']]
                 });
             });
@@ -571,7 +570,6 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
-                    attributes: {},
                     order: [['id', 'ASC']]
                 });
             });
@@ -603,7 +601,6 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
-                    attributes: {},
                     order: [['id', 'DESC']],
                     limit: 10,
                     offset: 10
@@ -640,7 +637,6 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
-                    attributes: {},
                     order: [['str', 'DESC']]
                 });
             });
@@ -678,7 +674,6 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: { name: { LIKE: '%foo%' } },
-                    attributes: {},
                     order: [['id', 'DESC']]
                 });
             });
@@ -729,7 +724,6 @@ describe('index test', function () {
                             { name: { LIKE: '%foo%' } }
                         ]
                     },
-                    attributes: {},
                     order: [['id', 'DESC']]
                 });
             });
@@ -810,7 +804,6 @@ describe('index test', function () {
                             IN: [1, 2, 3]
                         }
                     },
-                    attributes: {},
                     order: [['id', 'DESC']]
                 });
             });
@@ -861,12 +854,10 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
-                    attributes: {
-                        include: [[
-                            sequelizeMock.fn('DISTINCT', sequelizeMock.col('namespace')),
-                            'namespace'
-                        ]]
-                    },
+                    attributes: [[
+                        sequelizeMock.fn('DISTINCT', sequelizeMock.col('namespace')),
+                        'namespace'
+                    ]],
                     order: [['id', 'DESC']]
                 });
             });
@@ -921,7 +912,6 @@ describe('index test', function () {
                             IN: [1, 2, 3]
                         }
                     },
-                    attributes: {},
                     order: [['id', 'DESC']]
                 });
             });
@@ -964,7 +954,6 @@ describe('index test', function () {
                             IN: [1, 2, 3]
                         }
                     },
-                    attributes: {},
                     order: [['name', 'DESC']]
                 });
             });
@@ -1003,10 +992,10 @@ describe('index test', function () {
             return datastore.scan(testParams).then((data) => {
                 assert.notDeepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
-                    attributes: { exclude: ['id'], include: ['MAX'] },
+                    attributes: [['MAX', 'name']],
                     group: ['key'],
                     where: {},
-                    order: [['id', 'DESC']]
+                    order: [['MAX', 'DESC']]
                 });
             });
         });

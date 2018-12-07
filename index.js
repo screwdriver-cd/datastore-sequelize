@@ -332,8 +332,7 @@ class Squeakquel extends Datastore {
         const table = this.tables[config.table];
         const model = this.models[config.table];
         const findParams = {
-            where: {},
-            attributes: {}
+            where: {}
         };
         let sortKey = 'id';
 
@@ -361,7 +360,7 @@ class Squeakquel extends Datastore {
                     if (this._fieldInvalid({ validFields, field: paramValue })) {
                         throw new Error(`Invalid distinct field "${paramValue}"`);
                     }
-                    findParams.attributes.include = [[
+                    findParams.attributes = [[
                         Sequelize.fn('DISTINCT', Sequelize.col(paramValue)), paramValue
                     ]];
                 } else {
@@ -413,31 +412,32 @@ class Squeakquel extends Datastore {
             sortKey = config.sortBy;
         }
 
-        if (config.sort === 'ascending') {
-            findParams.order = [[sortKey, 'ASC']];
-        } else {
-            findParams.order = [[sortKey, 'DESC']];
-        }
-
-        if (Array.isArray(config.exclude)) {
+        // if query is simply excluding fields
+        if (!config.groupBy && Array.isArray(config.exclude)) {
             findParams.attributes.exclude = [...config.exclude];
         }
 
         if (Array.isArray(config.groupBy)) {
             let includedFields = validFields;
 
-            if (findParams.attributes.exclude) {
-                includedFields = includedFields.filter(f =>
-                    !findParams.attributes.exclude.includes(f)
-                );
+            // exclude fields in a group by query
+            if (Array.isArray(config.exclude)) {
+                includedFields = includedFields.filter(f => !config.exclude.includes(f));
             }
 
             // every other selected field must be aggregated so database engine won't complain
             // use "MAX" since the nature of this table is append-only
-            findParams.attributes.include = includedFields.map(field =>
-                Sequelize.fn('MAX', Sequelize.col(field))
+            findParams.attributes = includedFields.map(field =>
+                [Sequelize.fn('MAX', Sequelize.col(field)), field]
             );
             findParams.group = [...config.groupBy];
+            sortKey = Sequelize.fn('MAX', Sequelize.col(sortKey));
+        }
+
+        if (config.sort === 'ascending') {
+            findParams.order = [[sortKey, 'ASC']];
+        } else {
+            findParams.order = [[sortKey, 'DESC']];
         }
 
         return table.findAll(findParams)
