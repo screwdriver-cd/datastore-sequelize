@@ -1,12 +1,20 @@
 'use strict';
 
 /* eslint new-cap: ["error", { "capIsNewExceptionPattern": "^Sequelize\.." }] */
-/* eslint no-underscore-dangle: ["error", { "allowAfterThis": true }] */
+/* eslint no-underscore-dangle: ["error", { "allow": ["_previousDataValues", "_defineTable", "_fieldInvalid"] }] */
+
 const Datastore = require('screwdriver-datastore-base');
 const schemas = require('screwdriver-data-schema');
 const Sequelize = require('sequelize');
+const winston = require('winston');
 const MODELS = schemas.models;
 const MODEL_NAMES = Object.keys(MODELS);
+
+const logger = winston.createLogger({
+    transports: [
+        new winston.transports.Console()
+    ]
+});
 
 /**
  * Converts data from the value stored in the datastore
@@ -126,6 +134,7 @@ class Squeakquel extends Datastore {
 
         config.logging = () => {};
         this.prefix = config.prefix || '';
+        this.captureBuildMetrics = config.captureBuildMetrics || 'false';
 
         // It won't work if prefix is passed to Sequelize
         delete config.prefix;
@@ -162,7 +171,8 @@ class Squeakquel extends Datastore {
         const fields = schema.base.describe().children;
         const tableFields = {};
         const tableOptions = {
-            timestamps: false
+            timestamps: false,
+            indexes: schema.indexes
         };
 
         Object.keys(fields).forEach((fieldName) => {
@@ -189,7 +199,113 @@ class Squeakquel extends Datastore {
         });
 
         // @TODO Indexes and Range Keys
-        return this.client.define(tableName, tableFields, tableOptions);
+        const tableObj = this.client.define(tableName, tableFields, tableOptions);
+
+        try {
+            if (modelName === 'build' && this.captureBuildMetrics.toString() === 'true') {
+                tableObj.afterCreate('afterCreateHook', (instance, options) => {
+                    this.upsertBuildReportTable(instance, options, this.prefix);
+                });
+                tableObj.afterUpdate('afterUpdateHook', (instance, options) => {
+                    this.upsertBuildReportTable(instance, options, this.prefix);
+                });
+            }
+        } catch (err) {
+            logger.error(`Error upserting build metrics table: ${err}`);
+        }
+
+        return tableObj;
+    }
+
+    /**
+     * upsertBuildReportTable - any change in build status, upsert into flattened build metrics table
+     * @param  {Object} instance build table object
+     * @param  {Object} options  timestamps and indexes
+     * @param  {String} prefix   schema prefix - beta or blank
+     */
+    upsertBuildReportTable(instance, options, prefix) {
+        logger.info(`Started capturing build metrics for build id: ${instance.id}`);
+        if (instance._previousDataValues.status !== instance.dataValues.status) {
+            this.client.query(`INSERT INTO "${prefix}buildReports" ( ` +
+              ' "buildId", "jobId", "parentBuildId", "number", "created", ' +
+              ' "createdWeek", "createTime", "startTime", "endTime", ' +
+              ' "status", "statusMessage", "cluster", "stats", "totalSteps", ' +
+              ' "stepsDuration", "steps", "eventId", "eventCreateTime", ' +
+              ' "eventType", "startFrom", "parentEventId", "pr", "commit", ' +
+              ' "causeMessage", "pipelineId", "scmUri", "scmContext", ' +
+              ' "pipelineCreateTime", "pipelineLastEventId")' +
+            ' SELECT b.id::bigint as "buildId", b."jobId"::bigint as "jobId", ' +
+                ' b."parentBuildId" as parentBuildId, "number" as number,' +
+                ' b."createTime"::date as "created", ' +
+                ' date_trunc(\'week\', b."createTime"::date)::date as "createdWeek",' +
+                ' b."createTime"::timestamp as "createTime", ' +
+                ' b."createTime"::timestamp as "createTime", ' +
+                ' b."endTime"::timestamp as "endTime", b.status as "status", ' +
+                ' b."statusMessage", b."buildClusterName" as "cluster", ' +
+                ' b.stats as "stats", s."totalSteps", s."stepsDuration", s."steps", ' +
+                ' e."eventId", e."eventCreateTime", e."eventType", e."startFrom", ' +
+                ' e."parentEventId", e.pr, e.commit, e."causeMessage", p."pipelineId", ' +
+                ' p."scmUri", p."scmContext", p."pipelineCreateTime", p."pipelineLastEventId"' +
+            ` FROM "${prefix}builds" b ` +
+              ' INNER JOIN (SELECT id::bigint as "eventId", ' +
+                ' "createTime"::timestamp as "eventCreateTime", ' +
+                ' "pipelineId" as e_pipelineid, "type" as "eventType", "startFrom", ' +
+                ' "parentEventId"::bigint as "parentEventId", "pr", "commit", ' +
+                ' "causeMessage" ' +
+                     ` FROM "${prefix}events" WHERE id=:eventId) e ` +
+                     ' ON e."eventId"=b."eventId" ' +
+              ' INNER JOIN (SELECT id::bigint as "pipelineId", "scmUri", "scmContext", ' +
+                ' "createTime"::timestamp as "pipelineCreateTime", ' +
+                  ' "lastEventId"::bigint as "pipelineLastEventId" ' +
+                  ` FROM "${prefix}pipelines") p ` +
+                      ' ON p."pipelineId"=e.e_pipelineid ' +
+              ' LEFT JOIN (SELECT "buildId" as "buildId", count(id) as "totalSteps", ' +
+                ' max("endTime"::timestamp)-min("startTime"::timestamp) as "stepsDuration", ' +
+                ' json_agg(json_build_object(\'id\',id,\'name\',name,\'starttime\',"startTime",' +
+                ' \'endtime\',"endTime",\'duration\', ' +
+                ' "endTime"::timestamp - "startTime"::timestamp ) ) as "steps" ' +
+                  ` FROM "${prefix}steps" ` +
+                    ' WHERE "buildId"=:buildId' +
+                    ' GROUP BY "buildId") s ON s."buildId"=b.id ' +
+            ' WHERE b.id=:buildId ' +
+                ' ON CONFLICT ("buildId") DO UPDATE SET ' +
+                ' "buildId"=excluded."buildId", ' +
+                ' "jobId"=excluded."jobId", ' +
+                ' "parentBuildId"=excluded."parentBuildId", ' +
+                ' "number"=excluded."number", ' +
+                ' "created"=excluded."created", ' +
+                ' "createdWeek"=excluded."createdWeek", ' +
+                ' "createTime"=excluded."createTime", ' +
+                ' "startTime"=excluded."startTime", ' +
+                ' "endTime"=excluded."endTime", ' +
+                ' "status"=excluded."status", ' +
+                ' "cluster"=excluded."cluster", ' +
+                ' "stats"=excluded."stats", ' +
+                ' "totalSteps"=excluded."totalSteps", ' +
+                ' "stepsDuration"=excluded."stepsDuration", ' +
+                ' "steps"=excluded."steps", ' +
+                ' "eventId"=excluded."eventId", ' +
+                ' "eventCreateTime"=excluded."eventCreateTime", ' +
+                ' "eventType"=excluded."eventType", ' +
+                ' "startFrom"=excluded."startFrom", ' +
+                ' "parentEventId"=excluded."parentEventId", ' +
+                ' "pr"=excluded."pr", ' +
+                ' "commit"=excluded."commit", ' +
+                ' "causeMessage"=excluded."causeMessage", ' +
+                ' "pipelineId"=excluded."pipelineId", ' +
+                ' "scmUri"=excluded."scmUri", ' +
+                ' "scmContext"=excluded."scmContext", ' +
+                ' "pipelineCreateTime"=excluded."pipelineCreateTime", ' +
+                ' "pipelineLastEventId"=excluded."pipelineLastEventId"; ',
+            { replacements: { buildId: instance.id, eventId: instance.eventId },
+                type: this.client.QueryTypes.SELECT
+            }
+            ).spread((results, metadata) => {
+                logger.info(`Upserted ${metadata} records into build metrics table ` +
+                   `for buildId: ${instance.id}`);
+            });
+        }
+        logger.info(`Finished capturing build metrics for build id: ${instance.id}`);
     }
 
     /**
