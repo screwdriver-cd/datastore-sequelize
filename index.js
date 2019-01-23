@@ -202,7 +202,7 @@ class Squeakquel extends Datastore {
         const tableObj = this.client.define(tableName, tableFields, tableOptions);
 
         try {
-            if (modelName === 'build' && this.captureBuildMetrics.toString() === 'true') {
+            if (modelName === 'build' && this.captureBuildMetrics === 'true') {
                 tableObj.afterCreate('afterCreateHook', (instance, options) => {
                     this.upsertBuildReportTable(instance, options, this.prefix);
                 });
