@@ -127,7 +127,6 @@ class Squeakquel extends Datastore {
 
         config.logging = () => {};
         this.prefix = config.prefix || '';
-        this.captureBuildMetrics = config.captureBuildMetrics || 'false';
 
         // It won't work if prefix is passed to Sequelize
         delete config.prefix;
