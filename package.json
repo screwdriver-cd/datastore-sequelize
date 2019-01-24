@@ -53,7 +53,6 @@
     "screwdriver-data-schema": "^18.35.1",
     "screwdriver-datastore-base": "^3.0.7",
     "sequelize": "^4.39.0",
-    "sqlite3": "^4.0.2",
-    "winston": "^3.1.0"
+    "sqlite3": "^4.0.2"
   }
 }
