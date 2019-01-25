@@ -2,6 +2,7 @@
 
 /* eslint new-cap: ["error", { "capIsNewExceptionPattern": "^Sequelize\.." }] */
 /* eslint no-underscore-dangle: ["error", { "allowAfterThis": true }] */
+
 const Datastore = require('screwdriver-datastore-base');
 const schemas = require('screwdriver-data-schema');
 const Sequelize = require('sequelize');
@@ -162,7 +163,8 @@ class Squeakquel extends Datastore {
         const fields = schema.base.describe().children;
         const tableFields = {};
         const tableOptions = {
-            timestamps: false
+            timestamps: false,
+            indexes: schema.indexes
         };
 
         Object.keys(fields).forEach((fieldName) => {
