@@ -425,7 +425,7 @@ class Squeakquel extends Datastore {
                 includedFields = includedFields.filter(f => !config.exclude.includes(f));
             }
 
-            // every other selected field must be aggregated so database engine wont complain
+            // every other selected field must be aggregated so database engine won't complain
             // use "MAX" since the nature of this table is append-only
             findParams.attributes = includedFields.map(field =>
                 [Sequelize.fn('MAX', Sequelize.col(field)), field]
