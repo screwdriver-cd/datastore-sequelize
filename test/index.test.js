@@ -92,7 +92,9 @@ describe('index test', function () {
         sequelizeMock.Op = {
             in: 'IN',
             like: 'LIKE',
-            or: 'OR'
+            or: 'OR',
+            gte: 'GTE',
+            lte: 'LTE'
         };
         sequelizeMock.col = sinon.stub().returns('col');
         sequelizeMock.fn = sinon.stub().returnsArg(0);
@@ -959,7 +961,7 @@ describe('index test', function () {
             });
         });
 
-        it('scan and return grouped data with excluded field(s)', () => {
+        it('scans and returns grouped data with excluded field(s)', () => {
             const testData = [
                 {
                     id: 'data1',
@@ -1025,6 +1027,24 @@ describe('index test', function () {
             }).catch((err) => {
                 assert.isOk(err, 'Error should be returned');
                 assert.match(err.message, testError.message);
+            });
+        });
+
+        it('scans for data within date range', () => {
+            sequelizeTableMock.findAll.resolves([]);
+            testParams.startTime = '2019-01-28T11:00:00.000Z';
+            testParams.endTime = '2019-01-28T12:00:00.000Z';
+
+            return datastore.scan(testParams).then(() => {
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        createTime: {
+                            GTE: testParams.startTime,
+                            LTE: testParams.endTime
+                        }
+                    },
+                    order: [['id', 'DESC']]
+                });
             });
         });
     });
