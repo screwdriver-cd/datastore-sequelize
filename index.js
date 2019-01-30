@@ -328,6 +328,8 @@ class Squeakquel extends Datastore {
      * @param  {String}         [config.search.keyword]   Search keyword (eg: main)
      * @param  {String}         [config.sort]             Sorting option based on GSI range key. Ascending or descending.
      * @param  {String}         [config.sortBy]           Key to sort by; defaults to 'id'
+     * @param  {String}         [config.startTime]        Search for records >= startTime
+     * @param  {String}         [config.endTime]          Search for records <= endTime
      * @return {Promise}                                  Resolves to an array of records
      */
     _scan(config) {
@@ -405,6 +407,16 @@ class Squeakquel extends Datastore {
                     [Sequelize.Op.like]: config.search.keyword
                 };
             }
+        }
+
+        // if query has startTime and endTime (for metrics)
+        if (config.startTime) {
+            findParams.where.createTime = { [Sequelize.Op.gte]: config.startTime };
+        }
+
+        if (config.endTime) {
+            findParams.where.createTime = findParams.where.createTime || {}; // in case there is no startTime
+            Object.assign(findParams.where.createTime, { [Sequelize.Op.lte]: config.endTime });
         }
 
         if (config.sortBy) {

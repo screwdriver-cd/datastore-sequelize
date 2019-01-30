@@ -44,14 +44,14 @@
     "eslint-config-screwdriver": "^3.0.1",
     "jenkins-mocha": "^6.0.0",
     "joi": "^13.7.0",
-    "mockery": "^2.0.0",
+    "mockery": "^2.1.0",
     "sinon": "^2.3.2"
   },
   "dependencies": {
     "mysql2": "^1.6.1",
     "pg": "^6.2.3",
     "pg-hstore": "^2.3.2",
-    "screwdriver-data-schema": "^18.35.1",
+    "screwdriver-data-schema": "^18.42.0",
     "screwdriver-datastore-base": "^3.0.7",
     "sequelize": "^4.39.0",
     "sqlite3": "^4.0.2"
