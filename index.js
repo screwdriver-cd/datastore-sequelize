@@ -6,6 +6,7 @@
 const Datastore = require('screwdriver-datastore-base');
 const schemas = require('screwdriver-data-schema');
 const Sequelize = require('sequelize');
+const winston = require('winston');
 const MODELS = schemas.models;
 const MODEL_NAMES = Object.keys(MODELS);
 
@@ -115,17 +116,35 @@ class Squeakquel extends Datastore {
     /**
      * Constructs a Squeakquel object
      * http://docs.sequelizejs.com/en/latest/api/sequelize/
-     * @param  {Object} [config]                      Configuration object
-     * @param  {String} [config.database=screwdriver] Database name
-     * @param  {String} [config.dialect=mysql]        Type to use mysql, mssql, postgres, sqlite
-     * @param  {String} [config.username]             Login username
-     * @param  {String} [config.password]             Login password
-     * @param  {String} [config.prefix]               Prefix to add before all table names
+     * @param  {Object}  [config]                       Configuration object
+     * @param  {String}  [config.database=screwdriver]  Database name
+     * @param  {String}  [config.dialect=mysql]         Type to use mysql, mssql, postgres, sqlite
+     * @param  {String}  [config.username]              Login username
+     * @param  {String}  [config.password]              Login password
+     * @param  {String}  [config.prefix]                Prefix to add before all table names
+     * @param  {Integer} [config.slowlogThreshold=1000] Threshold for logging slowlogs in ms
      */
     constructor(config = {}) {
         super();
 
-        config.logging = () => {};
+        this.slowlogThreshold = config.slowlogThreshold || 1000;
+        this.logger = winston.createLogger({
+            format: winston.format.simple()
+        });
+        this.logger.add(
+            new winston.transports.Console({
+                stderrLevels: ['error', 'warn', 'info', 'debug']
+            })
+        );
+
+        config.benchmark = true;
+        config.logging = (log, time) => {
+            if (log.includes('ALTER')) {
+                this.logger.info(`Executed alter query: ${log}`);
+            } else if (time >= this.slowlogThreshold) {
+                this.logger.warn(`Slowlog detected: ${log}`);
+            }
+        };
         this.prefix = config.prefix || '';
 
         // It won't work if prefix is passed to Sequelize
