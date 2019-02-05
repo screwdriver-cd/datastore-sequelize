@@ -142,7 +142,7 @@ class Squeakquel extends Datastore {
             if (log.includes('ALTER')) {
                 this.logger.info(`Executed alter query: ${log}`);
             } else if (time >= this.slowlogThreshold) {
-                this.logger.warn(`Slowlog detected: ${log}`);
+                this.logger.warn(`Slow log detected: ${log}`);
             }
         };
         this.prefix = config.prefix || '';
