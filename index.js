@@ -182,8 +182,7 @@ class Squeakquel extends Datastore {
         const fields = schema.base.describe().children;
         const tableFields = {};
         const tableOptions = {
-            timestamps: false,
-            indexes: schema.indexes
+            timestamps: false
         };
 
         Object.keys(fields).forEach((fieldName) => {
