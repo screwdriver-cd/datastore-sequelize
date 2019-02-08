@@ -428,13 +428,15 @@ class Squeakquel extends Datastore {
         }
 
         // if query has startTime and endTime (for metrics)
+        const timeKey = config.timeKey || 'createTime';
+
         if (config.startTime) {
-            findParams.where.createTime = { [Sequelize.Op.gte]: config.startTime };
+            findParams.where[timeKey] = { [Sequelize.Op.gte]: config.startTime };
         }
 
         if (config.endTime) {
-            findParams.where.createTime = findParams.where.createTime || {}; // in case there is no startTime
-            Object.assign(findParams.where.createTime, { [Sequelize.Op.lte]: config.endTime });
+            findParams.where[timeKey] = findParams.where[timeKey] || {}; // in case there is no startTime
+            Object.assign(findParams.where[timeKey], { [Sequelize.Op.lte]: config.endTime });
         }
 
         if (config.sortBy) {

@@ -1047,5 +1047,24 @@ describe('index test', function () {
                 });
             });
         });
+
+        it('scans for data within date range using time key', () => {
+            sequelizeTableMock.findAll.resolves([]);
+            testParams.startTime = '2019-01-28T11:00:00.000Z';
+            testParams.endTime = '2019-01-28T12:00:00.000Z';
+            testParams.timeKey = 'startTime';
+
+            return datastore.scan(testParams).then(() => {
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        startTime: {
+                            GTE: testParams.startTime,
+                            LTE: testParams.endTime
+                        }
+                    },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
     });
 });
