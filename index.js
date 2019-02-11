@@ -139,9 +139,8 @@ class Squeakquel extends Datastore {
 
         config.benchmark = true;
         config.logging = (log, time) => {
-            if (log.includes('ALTER')) {
-                this.logger.info(`Executed alter query: ${log}`);
-            } else if (time >= this.slowlogThreshold) {
+            this.logger.info(`Executed query: ${log} in ${time}ms`);
+            if (time >= this.slowlogThreshold) {
                 this.logger.warn(`Slow log detected: ${log}`);
             }
         };
@@ -182,7 +181,8 @@ class Squeakquel extends Datastore {
         const fields = schema.base.describe().children;
         const tableFields = {};
         const tableOptions = {
-            timestamps: false
+            timestamps: false,
+            indexes: schema.indexes
         };
 
         Object.keys(fields).forEach((fieldName) => {
