@@ -139,9 +139,8 @@ class Squeakquel extends Datastore {
 
         config.benchmark = true;
         config.logging = (log, time) => {
-            this.logger.info(`Executed query: ${log} in ${time}ms`);
             if (time >= this.slowlogThreshold) {
-                this.logger.warn(`Slow log detected: ${log}`);
+                this.logger.info(`Slow log detected: ${log}, executed in ${time}ms`);
             }
         };
         this.prefix = config.prefix || '';
