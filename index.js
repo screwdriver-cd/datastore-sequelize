@@ -401,6 +401,10 @@ class Squeakquel extends Datastore {
         }
 
         if (config.search && config.search.field && config.search.keyword) {
+            const searchKey = this.client.getDialect() === 'postgres'
+                ? { [Sequelize.Op.ilike]: config.search.keyword }
+                : { [Sequelize.Op.like]: config.search.keyword };
+
             // If field is array, search for keyword in all fields
             if (Array.isArray(config.search.field)) {
                 findParams.where = {
@@ -412,7 +416,7 @@ class Squeakquel extends Datastore {
                         throw new Error(`Invalid search field "${field}"`);
                     }
                     findParams.where[Sequelize.Op.or].push({
-                        [field]: { [Sequelize.Op.like]: config.search.keyword }
+                        [field]: searchKey
                     });
                 });
             // If field is string, search using field directly
@@ -420,9 +424,7 @@ class Squeakquel extends Datastore {
                 if (this._fieldInvalid({ validFields, field: config.search.field })) {
                     throw new Error(`Invalid search field "${config.search.field}"`);
                 }
-                findParams.where[config.search.field] = {
-                    [Sequelize.Op.like]: config.search.keyword
-                };
+                findParams.where[config.search.field] = searchKey;
             }
         }
 
