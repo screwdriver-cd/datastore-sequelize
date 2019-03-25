@@ -92,7 +92,7 @@ describe('index test', function () {
         sequelizeMock.Op = {
             in: 'IN',
             like: 'LIKE',
-            ilike: 'ILIKE',
+            iLike: 'ILIKE',
             or: 'OR',
             gte: 'GTE',
             lte: 'LTE'
