@@ -92,6 +92,7 @@ describe('index test', function () {
         sequelizeMock.Op = {
             in: 'IN',
             like: 'LIKE',
+            ilike: 'ILIKE',
             or: 'OR',
             gte: 'GTE',
             lte: 'LTE'
@@ -676,6 +677,45 @@ describe('index test', function () {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: { name: { LIKE: '%foo%' } },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it('scans all the data and returns based on search values (case insensitive)', () => {
+            const testData = [
+                {
+                    id: 'data2',
+                    name: 'food',
+                    key: 'value2'
+                },
+                {
+                    id: 'data1',
+                    name: 'foodie',
+                    key: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.search = {
+                field: 'name',
+                keyword: '%foo%'
+            };
+
+            sequelizeClientMock.getDialect = sinon.stub().returns('postgres');
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: { name: { ILIKE: '%foo%' } },
                     order: [['id', 'DESC']]
                 });
             });
