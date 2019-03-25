@@ -402,7 +402,7 @@ class Squeakquel extends Datastore {
 
         if (config.search && config.search.field && config.search.keyword) {
             const searchKey = this.client.getDialect() === 'postgres'
-                ? { [Sequelize.Op.ilike]: config.search.keyword }
+                ? { [Sequelize.Op.iLike]: config.search.keyword }
                 : { [Sequelize.Op.like]: config.search.keyword };
 
             // If field is array, search for keyword in all fields
