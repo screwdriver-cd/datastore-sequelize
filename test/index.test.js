@@ -66,7 +66,7 @@ describe('index test', function () {
             create: sinon.stub(),
             destroy: sinon.stub(),
             findAll: sinon.stub(),
-            findById: sinon.stub(),
+            findByPk: sinon.stub(),
             findOne: sinon.stub(),
             update: sinon.stub()
         };
@@ -234,12 +234,12 @@ describe('index test', function () {
                 }
             };
 
-            sequelizeTableMock.findById.resolves(responseMock);
+            sequelizeTableMock.findByPk.resolves(responseMock);
             responseMock.toJSON.returns(testData);
 
             return datastore.get(testParams).then((data) => {
                 assert.deepEqual(data, realData);
-                assert.calledWith(sequelizeTableMock.findById, testParams.params.id);
+                assert.calledWith(sequelizeTableMock.findByPk, testParams.params.id);
             });
         });
 
@@ -279,7 +279,7 @@ describe('index test', function () {
         });
 
         it('gracefully understands that no one is returned when it does not exist', () => {
-            sequelizeTableMock.findById.resolves(null);
+            sequelizeTableMock.findByPk.resolves(null);
 
             return datastore.get({
                 table: 'pipelines',
@@ -306,7 +306,7 @@ describe('index test', function () {
         it('fails when it encounters an error', () => {
             const testError = new Error('errorCommunicatingToApi');
 
-            sequelizeTableMock.findById.rejects(testError);
+            sequelizeTableMock.findByPk.rejects(testError);
 
             return datastore._get({
                 table: 'pipelines',

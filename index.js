@@ -242,7 +242,7 @@ class Squeakquel extends Datastore {
                 where: config.params
             });
         } else {
-            finder = table.findById(config.params.id);
+            finder = table.findByPk(config.params.id);
         }
 
         return finder.then(item => decodeFromDialect(this.client.getDialect(), item, model));
