@@ -361,7 +361,8 @@ class Squeakquel extends Datastore {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
 
-        const validFields = Object.keys(model.base.describe().children);
+        const fields = model.base.describe().children;
+        const validFields = Object.keys(fields);
 
         if (config.paginate) {
             findParams.limit = config.paginate.count;
@@ -462,9 +463,17 @@ class Squeakquel extends Datastore {
 
             // every other selected field must be aggregated so database engine won't complain
             // use "MAX" since the nature of this table is append-only
-            findParams.attributes = includedFields.map(field =>
-                [Sequelize.fn('MAX', Sequelize.col(field)), field]
-            );
+            findParams.attributes = includedFields.map((field) => {
+                let col = Sequelize.col(field);
+
+                // Cast boolean to integer
+                // It is safer for most dialect to cast to integer instead of other integer type like smallint
+                if (fields[field] && fields[field].type === 'boolean') {
+                    col = Sequelize.cast(col, 'integer');
+                }
+
+                return [Sequelize.fn('MAX', col), field];
+            });
             findParams.group = [...config.groupBy];
             sortKey = Sequelize.fn('MAX', Sequelize.col(sortKey));
         }
