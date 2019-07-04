@@ -6,7 +6,9 @@
   "scripts": {
     "pretest": "eslint .",
     "test": "jenkins-mocha --recursive",
-    "semantic-release": "semantic-release pre && npm publish && semantic-release post"
+    "semantic-release": "semantic-release pre && npm publish && semantic-release post",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "repository": {
     "type": "git",
@@ -55,6 +57,8 @@
     "screwdriver-datastore-base": "^3.0.7",
     "sequelize": "^5.3.0",
     "sqlite3": "^4.0.2",
-    "winston": "^3.2.1"
-  }
+    "winston": "^3.2.1",
+    "snyk": "^1.189.0"
+  },
+  "snyk": true
 }
