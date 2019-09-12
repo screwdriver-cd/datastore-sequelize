@@ -217,7 +217,7 @@ class Squeakquel extends Datastore {
      * @return {Promise}
      */
     setup() {
-        return this.client.sync({ alter: true });
+        return this.client.sync();
     }
 
     /**
