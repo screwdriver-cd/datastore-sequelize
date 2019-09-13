@@ -34,6 +34,16 @@ function decodeFromDialect(dialect, content, model) {
             decodedValues[fieldName] = JSON.parse(decodedValues[fieldName]);
         }
 
+        if (fieldType === 'boolean') {
+            if (typeof decodedValues[fieldName] === 'string') {
+                if (decodedValues[fieldName] === '1') {
+                    decodedValues[fieldName] = true;
+                } else if (decodedValues[fieldName] === '0') {
+                    decodedValues[fieldName] = false;
+                }
+            }
+        }
+
         if (decodedValues[fieldName] === null) {
             delete decodedValues[fieldName];
         }

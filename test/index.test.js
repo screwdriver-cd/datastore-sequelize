@@ -223,6 +223,7 @@ describe('index test', function () {
                 key: 'value',
                 arr: '[1,2,3]',
                 obj: '{"a":"b"}',
+                bool: '0',
                 bar: null
             };
             const realData = {
@@ -231,7 +232,8 @@ describe('index test', function () {
                 arr: [1, 2, 3],
                 obj: {
                     a: 'b'
-                }
+                },
+                bool: false
             };
 
             sequelizeTableMock.findByPk.resolves(responseMock);
@@ -256,6 +258,7 @@ describe('index test', function () {
                 key: 'value',
                 arr: '[1,2,3]',
                 obj: '{"a":"b"}',
+                bool: '0',
                 bar: null
             };
             const realData = {
@@ -264,7 +267,8 @@ describe('index test', function () {
                 arr: [1, 2, 3],
                 obj: {
                     a: 'b'
-                }
+                },
+                bool: false
             };
 
             sequelizeTableMock.findOne.resolves(responseMock);
