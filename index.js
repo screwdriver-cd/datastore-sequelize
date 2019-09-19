@@ -222,12 +222,15 @@ class Squeakquel extends Datastore {
     }
 
     /**
-     * Get tables in order
+     * Database schema will be synced based on syncViaAPI environment variable
      * @method setup
      * @return {Promise}
      */
-    setup() {
-        return this.client.sync({ alter: true });
+    setup(ddlSyncEnabled) {
+        this.logger.info(`Datastore ddl sync enabled: ${ddlSyncEnabled}`);
+        if (ddlSyncEnabled === 'true') { return this.client.sync({ alter: true }); }
+
+        return Promise.resolve();
     }
 
     /**
