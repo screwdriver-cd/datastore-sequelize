@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "pretest": "eslint .",
+    "postinstall": "npm install sqlite3@4.1.0 --build-from-source",
     "test": "jenkins-mocha --recursive",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
