@@ -8,6 +8,7 @@ jobs:
         requires: [~pr, ~commit]
         steps:
             - install: npm install
+            - postinstall: npm install sqlite3@4.1.0 --build-from-source
             - test: npm test
 
     publish:
