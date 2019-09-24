@@ -228,7 +228,9 @@ class Squeakquel extends Datastore {
      */
     setup(ddlSyncEnabled) {
         this.logger.info(`Datastore ddl sync enabled: ${ddlSyncEnabled}`);
-        if (ddlSyncEnabled === 'true') { return this.client.sync({ alter: true }); }
+        if (ddlSyncEnabled === 'true') {
+            return this.client.sync({ alter: true });
+        }
 
         return Promise.resolve();
     }
