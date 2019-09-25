@@ -202,10 +202,24 @@ describe('index test', function () {
 
     describe('sync', () => {
         it('syncs tables', () => {
+            const ddlSyncEnabled = 'true';
+
             sequelizeClientMock.sync.resolves('moo');
 
-            return datastore.setup().then((data) => {
+            return datastore.setup(ddlSyncEnabled).then((data) => {
                 assert.deepEqual(data, 'moo');
+            });
+        });
+
+        it('doesnt sync tables', () => {
+            const ddlSyncEnabled = 'false';
+
+            sequelizeClientMock.sync.resolves(Promise.resolve());
+
+            return datastore.setup(ddlSyncEnabled).then(() => {
+                // do nothing
+            }).catch(() => {
+                assert.fail('this should not get here');
             });
         });
     });
