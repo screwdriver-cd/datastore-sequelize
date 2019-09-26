@@ -107,8 +107,9 @@ function getSequelizeTypeFromJoi(dialect, type, rules) {
 
         return Sequelize.TEXT;
     case 'array':
-    case 'object':
         return Sequelize.TEXT;
+    case 'object':
+        return Sequelize.TEXT('medium');
     case 'date':
         return Sequelize.DATE;
     case 'number':
