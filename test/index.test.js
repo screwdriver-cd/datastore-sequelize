@@ -1,10 +1,12 @@
 'use strict';
 
+/* eslint new-cap: ["error", { "capIsNewExceptionPattern": "^Sequelize\.." }] */
 /* eslint-disable no-underscore-dangle */
 const assert = require('chai').assert;
 const mockery = require('mockery');
 const sinon = require('sinon');
 const joi = require('joi');
+const Sequelize = require('sequelize');
 
 sinon.assert.expose(assert, { prefix: '' });
 
@@ -79,16 +81,15 @@ describe('index test', function () {
             get: sinon.stub()
         };
         sequelizeMock = sinon.stub().returns(sequelizeClientMock);
-        sequelizeMock.STRING = sinon.stub().withArgs(40).returns('VARCHAR(40)');
-        sequelizeMock.TEXT = 'TEXT';
-        sequelizeMock.DATE = 'DATE';
-        sequelizeMock.DOUBLE = 'DOUBLE';
-        sequelizeMock.INTEGER = {};
-        sequelizeMock.INTEGER.UNSIGNED = 'UNSIGNED INTEGER';
-        sequelizeMock.BOOLEAN = 'BOOLEAN';
-        sequelizeMock.BLOB = 'BLOB';
-        sequelizeMock.JSON = 'JSON';
-        sequelizeMock.ARRAY = sinon.stub().returns('ARRAY');
+        sequelizeMock.STRING = Sequelize.STRING;
+        sequelizeMock.TEXT = Sequelize.TEXT;
+        sequelizeMock.DATE = Sequelize.DATE;
+        sequelizeMock.DOUBLE = Sequelize.DOUBLE;
+        sequelizeMock.INTEGER = Sequelize.INTEGER;
+        sequelizeMock.BOOLEAN = Sequelize.BOOLEAN;
+        sequelizeMock.BLOB = Sequelize.BLOB;
+        sequelizeMock.JSON = Sequelize.JSON;
+        sequelizeMock.ARRAY = Sequelize.ARRAY;
         sequelizeMock.Op = {
             in: 'IN',
             like: 'LIKE',
@@ -139,52 +140,52 @@ describe('index test', function () {
             });
             assert.calledWith(sequelizeClientMock.define, 'jobs', {
                 id: {
-                    type: 'UNSIGNED INTEGER',
+                    type: Sequelize.INTEGER.UNSIGNED,
                     primaryKey: true,
                     autoIncrement: true
                 },
                 name: {
-                    type: 'TEXT',
+                    type: Sequelize.TEXT,
                     unique: 'uniquerow'
                 }
             });
             assert.calledWith(sequelizeClientMock.define, 'pipelines', {
                 id: {
-                    type: 'UNSIGNED INTEGER',
+                    type: Sequelize.INTEGER.UNSIGNED,
                     primaryKey: true,
                     autoIncrement: true
                 },
                 str: {
-                    type: 'TEXT',
+                    type: Sequelize.TEXT,
                     unique: 'uniquerow'
                 },
                 date: {
-                    type: 'DATE'
+                    type: Sequelize.DATE
                 },
                 num: {
-                    type: 'DOUBLE',
+                    type: Sequelize.DOUBLE,
                     unique: 'uniquerow'
                 },
                 bool: {
-                    type: 'BOOLEAN'
+                    type: Sequelize.BOOLEAN
                 },
                 bin: {
-                    type: 'BLOB'
+                    type: Sequelize.BLOB
                 },
                 arr: {
-                    type: 'TEXT'
+                    type: Sequelize.TEXT
                 },
                 obj: {
-                    type: 'TEXT'
+                    type: Sequelize.TEXT('medium')
                 },
                 any: {
                     type: null
                 },
                 namespace: {
-                    type: 'TEXT'
+                    type: Sequelize.TEXT
                 },
                 name: {
-                    type: 'TEXT'
+                    type: Sequelize.TEXT
                 }
             });
         });
