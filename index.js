@@ -483,7 +483,7 @@ class Squeakquel extends Datastore {
                 where[v] = { [Sequelize.Op.eq]: Sequelize.col(`${config.table}.${v}`) };
             });
 
-            // Slice method deletes `;`
+            // slice() method deletes `;`
             const subQuery = this.client.dialect.QueryGenerator.selectQuery(config.table, {
                 tableAs: 't',
                 attributes: [Sequelize.fn('MAX', Sequelize.col('t.id'))],
