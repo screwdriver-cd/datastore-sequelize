@@ -488,10 +488,25 @@ class Squeakquel extends Datastore {
                     col = Sequelize.cast(col, 'integer');
                 }
 
-                return [Sequelize.fn('MAX', col), field];
+                return [col, field];
             });
-            findParams.group = [...config.groupBy];
-            sortKey = Sequelize.fn('MAX', Sequelize.col(sortKey));
+
+            sortKey = Sequelize.col(sortKey);
+
+            const where = { id: { [Sequelize.Op.gte]: Sequelize.col(`${config.table}.id`) } };
+
+            config.groupBy.forEach((v) => {
+                where[v] = { [Sequelize.Op.eq]: Sequelize.col(`${config.table}.${v}`) };
+            });
+
+            // slice() method deletes `;`
+            const subQuery = this.client.dialect.QueryGenerator.selectQuery(config.table, {
+                tableAs: 't',
+                attributes: [Sequelize.fn('MAX', Sequelize.col('t.id'))],
+                where
+            }).slice(0, -1);
+
+            findParams.where = { id: { [Sequelize.Op.eq]: this.client.literal(`(${subQuery})`) } };
         }
 
         if (config.sort === 'ascending') {

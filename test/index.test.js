@@ -56,6 +56,8 @@ describe('index test', function () {
     let Datastore;
     let sequelizeRowMock;
     let sequelizeTableMock;
+    let sequelizeQueryGeneratorMock;
+    let sequelizeDialectMock;
     let sequelizeClientMock;
     let sequelizeMock;
     let responseMock;
@@ -72,10 +74,18 @@ describe('index test', function () {
             findOne: sinon.stub(),
             update: sinon.stub()
         };
+        sequelizeQueryGeneratorMock = {
+            selectQuery: sinon.stub()
+        };
+        sequelizeDialectMock = {
+            QueryGenerator: sequelizeQueryGeneratorMock
+        };
         sequelizeClientMock = {
             define: sinon.stub().returns(sequelizeTableMock),
             sync: sinon.stub().resolves(),
-            getDialect: sinon.stub().returns('sqlite')
+            getDialect: sinon.stub().returns('sqlite'),
+            literal: sinon.stub(),
+            dialect: sequelizeDialectMock
         };
         sequelizeRowMock = {
             get: sinon.stub()
@@ -96,7 +106,8 @@ describe('index test', function () {
             iLike: 'ILIKE',
             or: 'OR',
             gte: 'GTE',
-            lte: 'LTE'
+            lte: 'LTE',
+            eq: 'EQ'
         };
         sequelizeMock.col = sinon.stub().returns('col');
         sequelizeMock.fn = sinon.stub().returnsArg(0);
@@ -1047,16 +1058,20 @@ describe('index test', function () {
             testParams.table = 'jobs';
             testParams.exclude = ['id'];
             testParams.groupBy = ['key'];
-
+            sequelizeQueryGeneratorMock.selectQuery.withArgs('jobs', {
+                tableAs: 't',
+                attributes: ['MAX'],
+                where: { id: { GTE: 'col' }, key: { EQ: 'col' } }
+            }).returns('subQuery;');
+            sequelizeClientMock.literal.withArgs('(subQuery)').returns('literal');
             sequelizeTableMock.findAll.resolves(testInternal);
 
             return datastore.scan(testParams).then((data) => {
                 assert.notDeepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
-                    attributes: [['MAX', 'name']],
-                    group: ['key'],
-                    where: {},
-                    order: [['MAX', 'DESC']]
+                    attributes: [['col', 'name']],
+                    where: { id: { EQ: 'literal' } },
+                    order: [['col', 'DESC']]
                 });
             });
         });
