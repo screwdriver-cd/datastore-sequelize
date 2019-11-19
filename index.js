@@ -140,6 +140,7 @@ class Squeakquel extends Datastore {
 
         this.slowlogThreshold = config.slowlogThreshold || 1000;
         this.logger = winston.createLogger({
+            level: process.env.LOG_LEVEL || 'info',
             format: winston.format.simple()
         });
         this.logger.add(
