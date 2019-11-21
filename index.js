@@ -6,9 +6,9 @@
 const Datastore = require('screwdriver-datastore-base');
 const schemas = require('screwdriver-data-schema');
 const Sequelize = require('sequelize');
-const winston = require('winston');
 const MODELS = schemas.models;
 const MODEL_NAMES = Object.keys(MODELS);
+const logger = require('screwdriver-logger');
 
 /**
  * Converts data from the value stored in the datastore
@@ -139,20 +139,11 @@ class Squeakquel extends Datastore {
         super();
 
         this.slowlogThreshold = config.slowlogThreshold || 1000;
-        this.logger = winston.createLogger({
-            level: process.env.LOG_LEVEL || 'info',
-            format: winston.format.simple()
-        });
-        this.logger.add(
-            new winston.transports.Console({
-                stderrLevels: ['error', 'warn', 'info', 'debug']
-            })
-        );
 
         config.benchmark = true;
         config.logging = (log, time) => {
             if (time >= this.slowlogThreshold) {
-                this.logger.info(`Slow log detected: ${log}, executed in ${time}ms`);
+                logger.info(`Slow log detected: ${log}, executed in ${time}ms`);
             }
         };
         this.prefix = config.prefix || '';
@@ -229,7 +220,7 @@ class Squeakquel extends Datastore {
      * @return {Promise}
      */
     setup(ddlSyncEnabled) {
-        this.logger.info(`Datastore ddl sync enabled: ${ddlSyncEnabled}`);
+        logger.info(`Datastore ddl sync enabled: ${ddlSyncEnabled}`);
         if (ddlSyncEnabled === 'true') {
             return this.client.sync({ alter: true });
         }
