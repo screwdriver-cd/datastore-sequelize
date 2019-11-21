@@ -54,7 +54,8 @@
     "pg-hstore": "^2.3.2",
     "screwdriver-data-schema": "^18.45.0",
     "screwdriver-datastore-base": "^3.0.7",
+    "screwdriver-logger": "^1.0.0",
     "sequelize": "^5.3.0",
-    "winston": "^3.2.1"
+    "sqlite3": "^4.1.0"
   }
 }
