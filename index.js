@@ -474,6 +474,27 @@ class Squeakquel extends Datastore {
             findParams.attributes = includedFields.map((field) => {
                 let col = Sequelize.col(field);
 
+                // Temporary treatment to show correct trusted value.
+                // This subQuery is used on fiels of SELECT clause.
+                // This needs to delete after the trusted table generated.
+                if (field === 'trusted') {
+                    // TODO: config.table -> tableName
+                    const subQueryForTrusted = this.client.dialect
+                        .QueryGenerator.selectQuery(config.table, {
+                            tableAs: 't1',
+                            attributes: [Sequelize.fn('MAX', Sequelize.col('trusted'))],
+                            where: {
+                                name: {
+                                    [Sequelize.Op.eq]: Sequelize.col(`${config.table}.name`)
+                                },
+                                namespace: {
+                                    [Sequelize.Op.eq]: Sequelize.col(`${config.table}.namespace`)
+                                }
+                            }
+                        }).slice(0, -1);
+
+                    col = this.client.literal(`(${subQueryForTrusted})`);
+                }
                 // Cast boolean to integer
                 // It is safer for most dialect to cast to integer instead of other integer type like smallint
                 if (fields[field] && fields[field].type === 'boolean') {
