@@ -360,6 +360,7 @@ class Squeakquel extends Datastore {
     _scan(config) {
         const table = this.tables[config.table];
         const model = this.models[config.table];
+        const tableName = `${this.prefix}${config.table}`;
         const findParams = {
             where: {}
         };
@@ -478,17 +479,16 @@ class Squeakquel extends Datastore {
                 // This subQuery is used on fiels of SELECT clause.
                 // This needs to delete after the trusted table generated.
                 if (field === 'trusted') {
-                    // TODO: config.table -> tableName
                     const subQueryForTrusted = this.client.dialect
-                        .QueryGenerator.selectQuery(config.table, {
+                        .QueryGenerator.selectQuery(tableName, {
                             tableAs: 't1',
                             attributes: [Sequelize.fn('MAX', Sequelize.col('trusted'))],
                             where: {
                                 name: {
-                                    [Sequelize.Op.eq]: Sequelize.col(`${config.table}.name`)
+                                    [Sequelize.Op.eq]: Sequelize.col(`${tableName}.name`)
                                 },
                                 namespace: {
-                                    [Sequelize.Op.eq]: Sequelize.col(`${config.table}.namespace`)
+                                    [Sequelize.Op.eq]: Sequelize.col(`${tableName}.namespace`)
                                 }
                             }
                         }).slice(0, -1);
@@ -506,7 +506,6 @@ class Squeakquel extends Datastore {
 
             sortKey = Sequelize.col(sortKey);
 
-            const tableName = `${this.prefix}${config.table}`;
             const where = { id: { [Sequelize.Op.gte]: Sequelize.col(`${tableName}.id`) } };
 
             config.groupBy.forEach((v) => {
