@@ -485,14 +485,15 @@ class Squeakquel extends Datastore {
 
             sortKey = Sequelize.col(sortKey);
 
-            const where = { id: { [Sequelize.Op.gte]: Sequelize.col(`${config.table}.id`) } };
+            const tableName = `${this.prefix}${config.table}`;
+            const where = { id: { [Sequelize.Op.gte]: Sequelize.col(`${tableName}.id`) } };
 
             config.groupBy.forEach((v) => {
-                where[v] = { [Sequelize.Op.eq]: Sequelize.col(`${config.table}.${v}`) };
+                where[v] = { [Sequelize.Op.eq]: Sequelize.col(`${tableName}.${v}`) };
             });
 
             // slice() method deletes `;`
-            const subQuery = this.client.dialect.QueryGenerator.selectQuery(config.table, {
+            const subQuery = this.client.dialect.QueryGenerator.selectQuery(tableName, {
                 tableAs: 't',
                 attributes: [Sequelize.fn('MAX', Sequelize.col('t.id'))],
                 where
