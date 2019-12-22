@@ -479,8 +479,8 @@ class Squeakquel extends Datastore {
                 // This subQuery is used on fiels of SELECT clause.
                 // This needs to delete after the trusted table generated.
                 if (field === 'trusted') {
-
                     let subCol = Sequelize.col('trusted');
+
                     subCol = Sequelize.cast(subCol, 'integer');
 
                     const subQueryForTrusted = this.client.dialect
