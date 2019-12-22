@@ -118,6 +118,8 @@ function getSequelizeTypeFromJoi(dialect, type, rules) {
         return Sequelize.BOOLEAN;
     case 'binary':
         return Sequelize.BLOB;
+    case 'alternatives':
+        return Sequelize.TEXT('medium');
     default:
         return null;
     }
