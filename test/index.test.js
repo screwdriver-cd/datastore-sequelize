@@ -40,6 +40,20 @@ describe('index test', function () {
                 keys: ['name'],
                 indexes: ['name'],
                 rangeKeys: ['name']
+            },
+            trigger: {
+                base: joi.object({
+                    id: joi.string().length(40),
+                    src: joi.alternatives().try(
+                        joi.object().max(64),
+                        joi.string().max(64)),
+                    dest: joi.alternatives().try(
+                        joi.object().max(64),
+                        joi.string().max(64))
+                }),
+                tableName: 'triggers',
+                keys: ['src', 'dest'],
+                indexes: ['dest', 'src']
             }
         },
         plugins: {
@@ -157,6 +171,21 @@ describe('index test', function () {
                 },
                 name: {
                     type: Sequelize.TEXT,
+                    unique: 'uniquerow'
+                }
+            });
+            assert.calledWith(sequelizeClientMock.define, 'triggers', {
+                id: {
+                    type: Sequelize.INTEGER.UNSIGNED,
+                    primaryKey: true,
+                    autoIncrement: true
+                },
+                src: {
+                    type: Sequelize.TEXT('medium'),
+                    unique: 'uniquerow'
+                },
+                dest: {
+                    type: Sequelize.TEXT('medium'),
                     unique: 'uniquerow'
                 }
             });
