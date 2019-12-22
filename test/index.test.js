@@ -45,9 +45,11 @@ describe('index test', function () {
                 base: joi.object({
                     id: joi.string().length(40),
                     src: joi.alternatives().try(
-                        joi.string().max(100)),
+                        joi.object().max(64),
+                        joi.string().max(64)),
                     dest: joi.alternatives().try(
-                        joi.string().max(100))
+                        joi.object().max(64),
+                        joi.string().max(64))
                 }),
                 tableName: 'triggers',
                 keys: ['src', 'dest'],
