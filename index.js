@@ -362,6 +362,7 @@ class Squeakquel extends Datastore {
     _scan(config) {
         const table = this.tables[config.table];
         const model = this.models[config.table];
+        const tableName = `${this.prefix}${config.table}`;
         const findParams = {
             where: {}
         };
@@ -476,6 +477,30 @@ class Squeakquel extends Datastore {
             findParams.attributes = includedFields.map((field) => {
                 let col = Sequelize.col(field);
 
+                // Temporary treatment to show correct trusted value.
+                // This subQuery is used on fiels of SELECT clause.
+                // This needs to delete after the trusted table generated.
+                if (field === 'trusted') {
+                    let subCol = Sequelize.col('trusted');
+
+                    subCol = Sequelize.cast(subCol, 'integer');
+
+                    const subQueryForTrusted = this.client.dialect
+                        .QueryGenerator.selectQuery(tableName, {
+                            tableAs: 't1',
+                            attributes: [Sequelize.fn('MAX', subCol)],
+                            where: {
+                                name: {
+                                    [Sequelize.Op.eq]: Sequelize.col(`${tableName}.name`)
+                                },
+                                namespace: {
+                                    [Sequelize.Op.eq]: Sequelize.col(`${tableName}.namespace`)
+                                }
+                            }
+                        }).slice(0, -1);
+
+                    col = this.client.literal(`(${subQueryForTrusted})`);
+                }
                 // Cast boolean to integer
                 // It is safer for most dialect to cast to integer instead of other integer type like smallint
                 if (fields[field] && fields[field].type === 'boolean') {
@@ -487,7 +512,6 @@ class Squeakquel extends Datastore {
 
             sortKey = Sequelize.col(sortKey);
 
-            const tableName = `${this.prefix}${config.table}`;
             const where = { id: { [Sequelize.Op.gte]: Sequelize.col(`${tableName}.id`) } };
 
             config.groupBy.forEach((v) => {
