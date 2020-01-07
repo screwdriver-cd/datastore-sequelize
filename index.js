@@ -119,6 +119,10 @@ function getSequelizeTypeFromJoi(dialect, type, rules) {
     case 'binary':
         return Sequelize.BLOB;
     case 'alternatives':
+        if (length) {
+            return Sequelize.STRING(length);
+        }
+
         return Sequelize.TEXT('medium');
     default:
         return null;
@@ -191,11 +195,21 @@ class Squeakquel extends Datastore {
 
         Object.keys(fields).forEach((fieldName) => {
             const field = fields[fieldName];
+
+            let rules;
+
+            if (field.alternatives) {
+                // For schema using alternatives like triggers table.
+                rules = field.alternatives[0].rules;
+            } else {
+                rules = field.rules;
+            }
+
             const output = {
                 type: getSequelizeTypeFromJoi(
                     this.client.getDialect(),
                     field.type,
-                    field.rules || []
+                    rules || []
                 )
             };
 
