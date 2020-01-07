@@ -181,11 +181,11 @@ describe('index test', function () {
                     autoIncrement: true
                 },
                 src: {
-                    type: Sequelize.TEXT('medium'),
+                    type: Sequelize.STRING(64),
                     unique: 'uniquerow'
                 },
                 dest: {
-                    type: Sequelize.TEXT('medium'),
+                    type: Sequelize.STRING(64),
                     unique: 'uniquerow'
                 }
             });
