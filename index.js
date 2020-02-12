@@ -371,6 +371,7 @@ class Squeakquel extends Datastore {
      * @param  {String}         [config.sortBy]           Key to sort by; defaults to 'id'
      * @param  {String}         [config.startTime]        Search for records >= startTime
      * @param  {String}         [config.endTime]          Search for records <= endTime
+     * @param {String}          [config.aggregationField] Field that will be aggregated in aggregation query
      * @return {Promise}                                  Resolves to an array of records
      */
     _scan(config) {
@@ -546,6 +547,20 @@ class Squeakquel extends Datastore {
             findParams.order = [[sortKey, 'ASC']];
         } else {
             findParams.order = [[sortKey, 'DESC']];
+        }
+
+        if (config.aggregationField) {
+            if (!findParams.attributes) {
+                findParams.attributes = [];
+            }
+
+            findParams.attributes.push(config.aggregationField);
+            findParams.attributes.push([
+                Sequelize.fn('COUNT', Sequelize.col(config.aggregationField)),
+                'count']
+            );
+
+            findParams.group = config.aggregationField;
         }
 
         return table.findAll(findParams)
