@@ -1018,6 +1018,49 @@ describe('index test', function () {
             });
         });
 
+        it('scans for aggregation of data', () => {
+            const testData = [
+                {
+                    templateId: 7,
+                    count: 5
+                },
+                {
+                    templateId: 9,
+                    count: 2
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            testParams.table = 'jobs';
+            testParams.aggregationField = 'templateId';
+            testParams.params = {
+                templateId: [7, 9, 10]
+            };
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+
+            return datastore.scan(testParams).then((data) => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        templateId: {
+                            IN: [7, 9, 10]
+                        }
+                    },
+                    order: [['id', 'DESC']],
+                    attributes: ['templateId', ['COUNT', 'count']],
+                    group: 'templateId'
+                });
+            });
+        });
+
         it('scans for some data with indexed params using range key', () => {
             const testData = [
                 {
