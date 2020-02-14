@@ -1054,7 +1054,6 @@ describe('index test', function () {
                             IN: [7, 9, 10]
                         }
                     },
-                    order: [['id', 'DESC']],
                     attributes: ['templateId', ['COUNT', 'count']],
                     group: 'templateId'
                 });
