@@ -561,6 +561,7 @@ class Squeakquel extends Datastore {
             );
 
             findParams.group = config.aggregationField;
+            delete findParams.order;
         }
 
         return table.findAll(findParams)
