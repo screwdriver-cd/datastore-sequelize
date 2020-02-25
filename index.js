@@ -24,6 +24,7 @@ function decodeFromDialect(dialect, content, model) {
     }
 
     const decodedValues = content.toJSON();
+
     const fields = model.base.describe().children;
 
     Object.keys(decodedValues).forEach((fieldName) => {
@@ -371,7 +372,7 @@ class Squeakquel extends Datastore {
      * @param  {String}         [config.sortBy]           Key to sort by; defaults to 'id'
      * @param  {String}         [config.startTime]        Search for records >= startTime
      * @param  {String}         [config.endTime]          Search for records <= endTime
-     * @param {String}          [config.aggregationField] Field that will be aggregated in aggregation query
+     * @param  {String}         [config.aggregationField] Field that will be aggregated in aggregation query
      * @return {Promise}                                  Resolves to an array of records
      */
     _scan(config) {
@@ -567,6 +568,34 @@ class Squeakquel extends Datastore {
         return table.findAll(findParams)
             .then(items => Promise.all(items.map(item =>
                 decodeFromDialect(this.client.getDialect(), item, model))));
+    }
+
+    /**
+     * Run raw query on the datastore
+     * @param  {Object}        config                Configuration object
+     * @param  {Array<Object>} [config.queries]      Map of database type to query
+     * @param  {String}        [config.table]        Table name
+     * @param  {Object}        [config.replacements] Parameters to replace in the query
+     * @param  {Boolean}       [config.rawResponse]  Return raw response
+     */
+    _query(config) {
+        const table = this.tables[config.table];
+        const model = this.models[config.table];
+        const query = config.queries.find(q => q.dbType == this.client.getDialect()).query;
+        const queryParams = {replacements: config.replacements};
+
+        if (!config.rawResponse) {
+            queryParams.model = this.client.models[config.table];
+            queryParams.mapToModel = true;
+        }
+
+        return table.sequelize.query(query, queryParams).then((data) => {
+            if (!config.rawResponse) {
+                data.map(d => decodeFromDialect(this.client.getDialect(), d, model));
+            }
+
+            return data;
+        });
     }
 }
 
