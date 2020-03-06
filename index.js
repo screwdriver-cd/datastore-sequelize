@@ -24,7 +24,6 @@ function decodeFromDialect(dialect, content, model) {
     }
 
     const decodedValues = content.toJSON();
-
     const fields = model.base.describe().children;
 
     Object.keys(decodedValues).forEach((fieldName) => {
