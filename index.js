@@ -580,8 +580,8 @@ class Squeakquel extends Datastore {
     _query(config) {
         const table = this.tables[config.table];
         const model = this.models[config.table];
-        const query = config.queries.find(q => q.dbType == this.client.getDialect()).query;
-        const queryParams = {replacements: config.replacements};
+        const query = config.queries.find(q => q.dbType === this.client.getDialect()).query;
+        const queryParams = { replacements: config.replacements };
 
         if (!config.rawResponse) {
             queryParams.model = this.client.models[config.table];

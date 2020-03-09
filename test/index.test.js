@@ -7,6 +7,7 @@ const mockery = require('mockery');
 const sinon = require('sinon');
 const joi = require('joi');
 const Sequelize = require('sequelize');
+const rewire = require('rewire');
 
 sinon.assert.expose(assert, { prefix: '' });
 
@@ -62,7 +63,8 @@ describe('index test', function () {
                 update: joi.object(),
                 remove: joi.object(),
                 save: joi.object(),
-                scan: joi.object()
+                scan: joi.object(),
+                query: joi.object()
             }
         }
     };
@@ -86,7 +88,8 @@ describe('index test', function () {
             findAll: sinon.stub(),
             findByPk: sinon.stub(),
             findOne: sinon.stub(),
-            update: sinon.stub()
+            update: sinon.stub(),
+            sequelize: { query: sinon.stub() }
         };
         sequelizeQueryGeneratorMock = {
             selectQuery: sinon.stub()
@@ -99,7 +102,8 @@ describe('index test', function () {
             sync: sinon.stub().resolves(),
             getDialect: sinon.stub().returns('sqlite'),
             literal: sinon.stub(),
-            dialect: sequelizeDialectMock
+            dialect: sequelizeDialectMock,
+            models: { pipelines: 'pipelinesMock' }
         };
         sequelizeRowMock = {
             get: sinon.stub()
@@ -127,7 +131,8 @@ describe('index test', function () {
         sequelizeMock.fn = sinon.stub().returnsArg(0);
 
         responseMock = {
-            toJSON: sinon.stub()
+            toJSON: sinon.stub(),
+            map: sinon.stub()
         };
 
         mockery.enable({
@@ -138,13 +143,19 @@ describe('index test', function () {
         mockery.registerMock('screwdriver-data-schema', dataSchemaMock);
 
         /* eslint-disable global-require */
-        Datastore = require('../index');
+        Datastore = rewire('../index');
         /* eslint-enable global-require */
     });
 
     beforeEach(() => {
         // Reset mocks
-        Object.keys(sequelizeTableMock).forEach(key => sequelizeTableMock[key].reset());
+        Object.keys(sequelizeTableMock).forEach((key) => {
+            if (key === 'sequelize') {
+                sequelizeTableMock[key].query.reset();
+            } else {
+                sequelizeTableMock[key].reset();
+            }
+        });
         Object.keys(sequelizeRowMock).forEach(key => sequelizeRowMock[key].reset());
         Object.keys(responseMock).forEach(key => responseMock[key].reset());
         sequelizeClientMock.define = sinon.stub().returns(sequelizeTableMock);
@@ -1209,6 +1220,116 @@ describe('index test', function () {
                     },
                     order: [['id', 'DESC']]
                 });
+            });
+        });
+    });
+
+    describe('query', () => {
+        let testParams;
+
+        beforeEach(() => {
+            testParams = {
+                table: 'pipelines',
+                queries: [
+                    {
+                        dbType: 'postgres',
+                        query: 'postgresQuery'
+                    },
+                    {
+                        dbType: 'sqlite',
+                        query: 'sqliteQuery'
+                    },
+                    {
+                        dbType: 'mysql',
+                        query: 'mysqlQuery'
+                    }
+                ],
+                rawResponse: true
+            };
+        });
+
+        it('postgres query', () => {
+            sequelizeClientMock.getDialect = sinon.stub().returns('postgres');
+            sequelizeTableMock.sequelize.query.resolves([]);
+
+            return datastore.query(testParams).then(() => {
+                assert.calledWith(sequelizeTableMock.sequelize.query, 'postgresQuery', {
+                    replacements: undefined
+                });
+            });
+        });
+
+        it('sqlite query', () => {
+            sequelizeClientMock.getDialect = sinon.stub().returns('sqlite');
+            sequelizeTableMock.sequelize.query.resolves([]);
+
+            return datastore.query(testParams).then(() => {
+                assert.calledWith(sequelizeTableMock.sequelize.query, 'sqliteQuery', {
+                    replacements: undefined
+                });
+            });
+        });
+
+        it('mysql query', () => {
+            sequelizeClientMock.getDialect = sinon.stub().returns('mysql');
+            sequelizeTableMock.sequelize.query.resolves([]);
+
+            return datastore.query(testParams).then(() => {
+                assert.calledWith(sequelizeTableMock.sequelize.query, 'mysqlQuery', {
+                    replacements: undefined
+                });
+            });
+        });
+
+        it('query with replacements', () => {
+            sequelizeClientMock.getDialect = sinon.stub().returns('postgres');
+            sequelizeTableMock.sequelize.query.resolves([]);
+
+            testParams.replacements = {
+                ids: [1, 2, 3],
+                status: 'SUCCESS'
+            };
+
+            return datastore.query(testParams).then(() => {
+                assert.calledWith(sequelizeTableMock.sequelize.query, 'postgresQuery', {
+                    replacements: {
+                        ids: [1, 2, 3],
+                        status: 'SUCCESS'
+                    }
+                });
+            });
+        });
+
+        it('query without raw response', () => {
+            const testData = [{ id: 1, value: 'val' }];
+            const revertdecodeFromDialect = Datastore.__set__(
+                'decodeFromDialect',
+                sinon.stub().returns({})
+            );
+
+            sequelizeClientMock.getDialect = sinon.stub().returns('postgres');
+            sequelizeTableMock.sequelize.query.resolves(testData);
+
+            testParams.replacements = {
+                ids: [1, 2, 3]
+            };
+            testParams.rawResponse = false;
+
+            return datastore.query(testParams).then(() => {
+                assert.calledWith(sequelizeTableMock.sequelize.query, 'postgresQuery', {
+                    replacements: testParams.replacements,
+                    mapToModel: true,
+                    model: 'pipelinesMock'
+                });
+
+                assert.calledWith(
+                    Datastore.__get__('decodeFromDialect'),
+                    'postgres',
+                    testData[0],
+                    dataSchemaMock.models.pipeline
+                );
+
+                revertdecodeFromDialect();
             });
         });
     });

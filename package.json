@@ -51,6 +51,7 @@
     "mysql2": "^1.6.5",
     "pg": "^6.2.3",
     "pg-hstore": "^2.3.2",
+    "rewire": "^4.0.1",
     "screwdriver-data-schema": "^19.1.1",
     "screwdriver-datastore-base": "^3.0.7",
     "screwdriver-logger": "^1.0.0",
