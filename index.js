@@ -578,17 +578,24 @@ class Squeakquel extends Datastore {
      * @param  {Boolean}       [config.rawResponse]  Return raw response without binding to model
      */
     _query(config) {
+        const dialect = this.client.getDialect();
         const table = this.tables[config.table];
         const model = this.models[config.table];
-        const query = config.queries.find(q => q.dbType === this.client.getDialect()).query;
+        const query = config.queries.find(q => q.dbType === dialect);
         const queryParams = { replacements: config.replacements };
+
+        if (!table) {
+            return Promise.reject(new Error(`Invalid table name "${config.table}"`));
+        } else if (!query) {
+            return Promise.reject(new Error(`No query found for "${dialect}" database`));
+        }
 
         if (!config.rawResponse) {
             queryParams.model = this.client.models[config.table];
             queryParams.mapToModel = true;
         }
 
-        return table.sequelize.query(query, queryParams).then((data) => {
+        return table.sequelize.query(query.query, queryParams).then((data) => {
             if (!config.rawResponse) {
                 data.map(d => decodeFromDialect(this.client.getDialect(), d, model));
             }

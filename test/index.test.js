@@ -1332,5 +1332,30 @@ describe('index test', function () {
                 revertdecodeFromDialect();
             });
         });
+
+        it('query fails when given an unknown table name', () => {
+            testParams.table = 'dne';
+
+            return datastore.query(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /Invalid table name/);
+            });
+        });
+
+        it('query fails when not given a matching query', () => {
+            testParams.queries = [{
+                dbType: 'dne',
+                query: 'dneQuery'
+            }];
+
+            return datastore.query(testParams).then(() => {
+                throw new Error('Oops');
+            }).catch((err) => {
+                assert.isOk(err, 'Error should be returned');
+                assert.match(err.message, /No query found for/);
+            });
+        });
     });
 });
