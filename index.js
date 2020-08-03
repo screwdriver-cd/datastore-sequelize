@@ -24,7 +24,7 @@ function decodeFromDialect(dialect, content, model) {
     }
 
     const decodedValues = content.toJSON();
-    const fields = model.base.describe().children;
+    const fields = model.base.describe().keys;
 
     Object.keys(decodedValues).forEach((fieldName) => {
         const field = fields[fieldName] || {};
@@ -72,7 +72,7 @@ function encodeToDialect(dialect, content, model) {
             encodedObject[keyName] = promisedValues[index];
         });
 
-        const fields = model.base.describe().children;
+        const fields = model.base.describe().keys;
 
         encodedKeys.forEach((fieldName) => {
             const field = fields[fieldName] || {};
@@ -97,7 +97,16 @@ function encodeToDialect(dialect, content, model) {
  */
 function getSequelizeTypeFromJoi(dialect, type, rules) {
     // Get the column length if length/max rule is included in dataschema
-    const length = rules.filter(o => o.name === 'length' || o.name === 'max').map(o => o.arg)[0];
+    let length;
+    const column = rules.filter(o => o.name === 'length' || o.name === 'max');
+
+    if (column) {
+        const value = column.map(o => o.arg)[0] || column.map(o => o.args)[0];
+
+        if (value) {
+            length = value.limit ? value.limit : value;
+        }
+    }
 
     switch (type) {
     case 'string':
@@ -186,7 +195,7 @@ class Squeakquel extends Datastore {
     _defineTable(modelName) {
         const schema = MODELS[modelName];
         const tableName = `${this.prefix}${schema.tableName}`;
-        const fields = schema.base.describe().children;
+        const fields = schema.base.describe().keys;
         const tableFields = {};
         const tableOptions = {
             timestamps: false,
@@ -201,6 +210,8 @@ class Squeakquel extends Datastore {
             if (field.alternatives) {
                 // For schema using alternatives like triggers table.
                 rules = field.alternatives[0].rules;
+            } else if (field.matches && field.matches[0] && field.matches[0].schema) {
+                rules = field.matches[0].schema.rules;
             } else {
                 rules = field.rules;
             }
@@ -387,7 +398,7 @@ class Squeakquel extends Datastore {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
 
-        const fields = model.base.describe().children;
+        const fields = model.base.describe().keys;
         const validFields = Object.keys(fields);
 
         if (config.paginate) {
@@ -403,7 +414,7 @@ class Squeakquel extends Datastore {
                     findParams.where[paramName] = {
                         [Sequelize.Op.in]: paramValue
                     };
-                // Return distinct rows
+                    // Return distinct rows
                 } else if (paramName === 'distinct') {
                     if (this._fieldInvalid({ validFields, field: paramValue })) {
                         throw new Error(`Invalid distinct field "${paramValue}"`);
@@ -446,7 +457,7 @@ class Squeakquel extends Datastore {
                         [field]: searchKey
                     });
                 });
-            // If field is string, search using field directly
+                // If field is string, search using field directly
             } else {
                 if (this._fieldInvalid({ validFields, field: config.search.field })) {
                     throw new Error(`Invalid search field "${config.search.field}"`);
