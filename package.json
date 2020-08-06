@@ -1,6 +1,6 @@
 {
   "name": "screwdriver-datastore-sequelize",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "Datastore implementation for mysql, postgres, sqlite3, and mssql",
   "main": "index.js",
   "scripts": {
@@ -39,7 +39,6 @@
     }
   },
   "devDependencies": {
-    "@hapi/joi": "^17.1.1",
     "chai": "^4.2.0",
     "eslint": "^4.19.1",
     "eslint-config-screwdriver": "^3.0.1",
@@ -49,6 +48,7 @@
     "sinon": "^2.3.2"
   },
   "dependencies": {
+    "joi": "^17.2.0",
     "mysql2": "^1.6.5",
     "pg": "^6.2.3",
     "pg-hstore": "^2.3.2",

@@ -5,7 +5,7 @@
 const assert = require('chai').assert;
 const mockery = require('mockery');
 const sinon = require('sinon');
-const joi = require('@hapi/joi');
+const joi = require('joi');
 const Sequelize = require('sequelize');
 const rewire = require('rewire');
 
