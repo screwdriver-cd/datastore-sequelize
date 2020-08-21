@@ -382,6 +382,8 @@ class Squeakquel extends Datastore {
             where: {}
         };
         let sortKey = 'id';
+        let containsOp = false;
+        let arrayQueryConstruct = {};
 
         if (!table) {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
@@ -403,7 +405,22 @@ class Squeakquel extends Datastore {
                     findParams.where[paramName] = {
                         [Sequelize.Op.in]: paramValue
                     };
-                // Return distinct rows
+                } else if (paramName === 'contains') {
+                    if (Object.keys(paramValue).length === 0) {
+                        throw new Error(`Param "${paramName}" has no keys`);
+                    }
+
+                    // query has a 'contains' operator
+                    containsOp = true;
+                    const arrayLabel = Object.keys(paramValue)[0];
+
+                    // create the query construct for contains operator
+                    arrayQueryConstruct = {
+                        arrayLabel,
+                        keyword: paramValue[arrayLabel]
+                    };
+
+                    // Return distinct rows
                 } else if (paramName === 'distinct') {
                     if (this._fieldInvalid({ validFields, field: paramValue })) {
                         throw new Error(`Invalid distinct field "${paramValue}"`);
@@ -565,8 +582,33 @@ class Squeakquel extends Datastore {
         }
 
         return table.findAll(findParams)
-            .then(items => Promise.all(items.map(item =>
-                decodeFromDialect(this.client.getDialect(), item, model))));
+            .then((items) => {
+                if (containsOp) {
+                    const itemsFiltered = [];
+
+                    items.forEach((item) => {
+                        const key = arrayQueryConstruct.arrayLabel;
+
+                        if (key in item && item[key] !== null) {
+                            // parse the array strings to convert them into arrays
+                            const arrayItemsString = item[key].match(/\[(.*?)\]/)[1];
+                            const stringToArray = arrayItemsString.split(',');
+                            const sanitizedStringToArray = stringToArray.map(elem =>
+                                elem.match(/"(.*?)"/)[1]);
+
+                            // check if the array contains the keyword
+                            if (sanitizedStringToArray.includes(arrayQueryConstruct.keyword)) {
+                                itemsFiltered.push(item);
+                            }
+                        }
+                    });
+
+                    items = itemsFiltered; // eslint-disable-line no-param-reassign
+                }
+
+                return Promise.all(items.map(item =>
+                    decodeFromDialect(this.client.getDialect(), item, model)));
+            });
     }
 
     /**
