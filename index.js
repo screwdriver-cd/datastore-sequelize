@@ -101,10 +101,10 @@ function getSequelizeTypeFromJoi(dialect, type, rules) {
     const column = rules.filter(o => o.name === 'length' || o.name === 'max');
 
     if (column) {
-        const value = column.map(o => o.arg)[0] || column.map(o => o.args)[0];
+        const args = column.map(o => o.arg)[0] || column.map(o => o.args)[0];
 
-        if (value) {
-            length = value.limit ? value.limit : value;
+        if (args) {
+            length = args.limit;
         }
     }
 
