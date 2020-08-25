@@ -11,7 +11,7 @@ const rewire = require('rewire');
 
 sinon.assert.expose(assert, { prefix: '' });
 
-describe('index test', function () {
+describe('index test', function() {
     const dataSchemaMock = {
         models: {
             pipeline: {
@@ -45,12 +45,8 @@ describe('index test', function () {
             trigger: {
                 base: joi.object({
                     id: joi.string().length(40),
-                    src: joi.alternatives().try(
-                        joi.object().max(64),
-                        joi.string().max(64)),
-                    dest: joi.alternatives().try(
-                        joi.object().max(64),
-                        joi.string().max(64))
+                    src: joi.alternatives().try(joi.object().max(64), joi.string().max(64)),
+                    dest: joi.alternatives().try(joi.object().max(64), joi.string().max(64))
                 }),
                 tableName: 'triggers',
                 keys: ['src', 'dest'],
@@ -149,7 +145,7 @@ describe('index test', function () {
 
     beforeEach(() => {
         // Reset mocks
-        Object.keys(sequelizeTableMock).forEach((key) => {
+        Object.keys(sequelizeTableMock).forEach(key => {
             if (key === 'sequelize') {
                 sequelizeTableMock[key].query.reset();
             } else {
@@ -258,7 +254,7 @@ describe('index test', function () {
 
             sequelizeClientMock.sync.resolves('moo');
 
-            return datastore.setup(ddlSyncEnabled).then((data) => {
+            return datastore.setup(ddlSyncEnabled).then(data => {
                 assert.deepEqual(data, 'moo');
             });
         });
@@ -268,11 +264,14 @@ describe('index test', function () {
 
             sequelizeClientMock.sync.resolves(Promise.resolve());
 
-            return datastore.setup(ddlSyncEnabled).then(() => {
-                // do nothing
-            }).catch(() => {
-                assert.fail('this should not get here');
-            });
+            return datastore
+                .setup(ddlSyncEnabled)
+                .then(() => {
+                    // do nothing
+                })
+                .catch(() => {
+                    assert.fail('this should not get here');
+                });
         });
     });
 
@@ -305,7 +304,7 @@ describe('index test', function () {
             sequelizeTableMock.findByPk.resolves(responseMock);
             responseMock.toJSON.returns(testData);
 
-            return datastore.get(testParams).then((data) => {
+            return datastore.get(testParams).then(data => {
                 assert.deepEqual(data, realData);
                 assert.calledWith(sequelizeTableMock.findByPk, testParams.params.id);
             });
@@ -340,7 +339,7 @@ describe('index test', function () {
             sequelizeTableMock.findOne.resolves(responseMock);
             responseMock.toJSON.returns(testData);
 
-            return datastore.get(testParams).then((data) => {
+            return datastore.get(testParams).then(data => {
                 assert.deepEqual(data, realData);
                 assert.calledWith(sequelizeTableMock.findOne, {
                     where: testParams.params
@@ -351,44 +350,51 @@ describe('index test', function () {
         it('gracefully understands that no one is returned when it does not exist', () => {
             sequelizeTableMock.findByPk.resolves(null);
 
-            return datastore.get({
-                table: 'pipelines',
-                params: {
-                    id: 'someId'
-                }
-            }).then(data => assert.isNull(data));
+            return datastore
+                .get({
+                    table: 'pipelines',
+                    params: {
+                        id: 'someId'
+                    }
+                })
+                .then(data => assert.isNull(data));
         });
 
         it('fails when given an unknown table name', () =>
-            datastore.get({
-                table: 'tableUnicorn',
-                params: {
-                    id: 'doesNotMatter'
-                }
-            }).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid table name/);
-            })
-        );
+            datastore
+                .get({
+                    table: 'tableUnicorn',
+                    params: {
+                        id: 'doesNotMatter'
+                    }
+                })
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid table name/);
+                }));
 
         it('fails when it encounters an error', () => {
             const testError = new Error('errorCommunicatingToApi');
 
             sequelizeTableMock.findByPk.rejects(testError);
 
-            return datastore._get({
-                table: 'pipelines',
-                params: {
-                    id: 'someId'
-                }
-            }).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.equal(err.message, testError.message);
-            });
+            return datastore
+                ._get({
+                    table: 'pipelines',
+                    params: {
+                        id: 'someId'
+                    }
+                })
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.equal(err.message, testError.message);
+                });
         });
     });
 
@@ -407,23 +413,25 @@ describe('index test', function () {
             expectedRow.get.returns(expectedResult);
             sequelizeTableMock.create.resolves(expectedRow);
 
-            return datastore.save({
-                table: 'pipelines',
-                params: {
-                    key: 'value',
-                    arr: [1, 2, 3],
-                    obj: {
-                        a: 'b'
+            return datastore
+                .save({
+                    table: 'pipelines',
+                    params: {
+                        key: 'value',
+                        arr: [1, 2, 3],
+                        obj: {
+                            a: 'b'
+                        }
                     }
-                }
-            }).then((data) => {
-                assert.deepEqual(data, expectedResult);
-                assert.calledWith(sequelizeTableMock.create, {
-                    key: 'value',
-                    arr: '[1,2,3]',
-                    obj: '{"a":"b"}'
+                })
+                .then(data => {
+                    assert.deepEqual(data, expectedResult);
+                    assert.calledWith(sequelizeTableMock.create, {
+                        key: 'value',
+                        arr: '[1,2,3]',
+                        obj: '{"a":"b"}'
+                    });
                 });
-            });
         });
 
         it('fails when it encounters an error', () => {
@@ -431,34 +439,41 @@ describe('index test', function () {
 
             sequelizeTableMock.create.rejects(testError);
 
-            return datastore.save({
-                table: 'pipelines',
-                params: {
-                    id: 'doesNotMatter',
-                    data: {}
-                }
-            }).then(() => {
-                throw new Error('Oops');
-            }, (err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.equal(err.message, testError.message);
-            });
+            return datastore
+                .save({
+                    table: 'pipelines',
+                    params: {
+                        id: 'doesNotMatter',
+                        data: {}
+                    }
+                })
+                .then(
+                    () => {
+                        throw new Error('Oops');
+                    },
+                    err => {
+                        assert.isOk(err, 'Error should be returned');
+                        assert.equal(err.message, testError.message);
+                    }
+                );
         });
 
         it('fails when given an unknown table name', () =>
-            datastore.save({
-                table: 'doesNotExist',
-                params: {
-                    id: 'doesNotMatter',
-                    data: {}
-                }
-            }).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid table name/);
-            })
-        );
+            datastore
+                .save({
+                    table: 'doesNotExist',
+                    params: {
+                        id: 'doesNotMatter',
+                        data: {}
+                    }
+                })
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid table name/);
+                }));
     });
 
     describe('remove', () => {
@@ -472,7 +487,7 @@ describe('index test', function () {
 
             sequelizeTableMock.destroy.resolves(null);
 
-            return datastore.remove(testParams).then((data) => {
+            return datastore.remove(testParams).then(data => {
                 assert.isNull(data);
                 assert.calledWith(sequelizeTableMock.destroy, {
                     where: {
@@ -483,35 +498,40 @@ describe('index test', function () {
         });
 
         it('fails when given an unknown table name', () =>
-            datastore.remove({
-                table: 'tableUnicorn',
-                params: {
-                    id: 'doesNotMatter'
-                }
-            }).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid table name/);
-            })
-        );
+            datastore
+                .remove({
+                    table: 'tableUnicorn',
+                    params: {
+                        id: 'doesNotMatter'
+                    }
+                })
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid table name/);
+                }));
 
         it('fails when it encounters an error', () => {
             const testError = new Error('errorCommunicatingToApi');
 
             sequelizeTableMock.destroy.rejects(testError);
 
-            return datastore.remove({
-                table: 'pipelines',
-                params: {
-                    id: 'someId'
-                }
-            }).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, testError.message);
-            });
+            return datastore
+                .remove({
+                    table: 'pipelines',
+                    params: {
+                        id: 'someId'
+                    }
+                })
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, testError.message);
+                });
         });
     });
 
@@ -525,53 +545,60 @@ describe('index test', function () {
 
             sequelizeTableMock.update.resolves();
 
-            return datastore.update({
-                table: 'pipelines',
-                params: {
-                    id,
-                    targetKey: 'updatedValue'
-                }
-            }).then((data) => {
-                assert.deepEqual(data, expectedResult);
-                assert.calledWith(sequelizeTableMock.update, {
-                    id,
-                    targetKey: 'updatedValue'
+            return datastore
+                .update({
+                    table: 'pipelines',
+                    params: {
+                        id,
+                        targetKey: 'updatedValue'
+                    }
+                })
+                .then(data => {
+                    assert.deepEqual(data, expectedResult);
+                    assert.calledWith(sequelizeTableMock.update, {
+                        id,
+                        targetKey: 'updatedValue'
+                    });
                 });
-            });
         });
 
         it('fails when given an unknown table name', () =>
-            datastore.update({
-                table: 'doesNotExist',
-                params: {
-                    id: 'doesNotMatter',
-                    data: {}
-                }
-            }).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid table name/);
-            })
-        );
+            datastore
+                .update({
+                    table: 'doesNotExist',
+                    params: {
+                        id: 'doesNotMatter',
+                        data: {}
+                    }
+                })
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid table name/);
+                }));
 
         it('fails when it encounters an error', () => {
             const testError = new Error('testError');
 
             sequelizeTableMock.update.rejects(testError);
 
-            return datastore.update({
-                table: 'pipelines',
-                params: {
-                    id: 'doesNotMatter',
-                    data: {}
-                }
-            }).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.equal(err.message, testError.message);
-            });
+            return datastore
+                .update({
+                    table: 'pipelines',
+                    params: {
+                        id: 'doesNotMatter',
+                        data: {}
+                    }
+                })
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.equal(err.message, testError.message);
+                });
         });
     });
 
@@ -606,7 +633,7 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.resolves(testInternal);
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
@@ -639,7 +666,7 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.resolves(testInternal);
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
@@ -670,7 +697,7 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.resolves(testInternal);
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
@@ -706,7 +733,7 @@ describe('index test', function () {
             sequelizeTableMock.findAll.resolves(testInternal);
             testParams.sortBy = 'str';
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
@@ -743,7 +770,7 @@ describe('index test', function () {
                 keyword: '%foo%'
             };
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: { name: { LIKE: '%foo%' } },
@@ -782,7 +809,7 @@ describe('index test', function () {
 
             sequelizeClientMock.getDialect = sinon.stub().returns('postgres');
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: { name: { ILIKE: '%foo%' } },
@@ -827,14 +854,11 @@ describe('index test', function () {
                 keyword: '%foo%'
             };
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {
-                        OR: [
-                            { namespace: { LIKE: '%foo%' } },
-                            { name: { LIKE: '%foo%' } }
-                        ]
+                        OR: [{ namespace: { LIKE: '%foo%' } }, { name: { LIKE: '%foo%' } }]
                     },
                     order: [['id', 'DESC']]
                 });
@@ -847,12 +871,15 @@ describe('index test', function () {
                 keyword: '%foo%'
             };
 
-            return datastore.scan(testParams).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid search field "banana"/);
-            });
+            return datastore
+                .scan(testParams)
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid search field "banana"/);
+                });
         });
 
         it('throws error if search field in field array does not exist in schema', () => {
@@ -861,23 +888,29 @@ describe('index test', function () {
                 keyword: '%foo%'
             };
 
-            return datastore.scan(testParams).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid search field "banana"/);
-            });
+            return datastore
+                .scan(testParams)
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid search field "banana"/);
+                });
         });
 
         it('throws error if sortBy does not exist in schema', () => {
             testParams.sortBy = 'banana';
 
-            return datastore.scan(testParams).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid sortBy "banana"/);
-            });
+            return datastore
+                .scan(testParams)
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid sortBy "banana"/);
+                });
         });
 
         it('scans for some data with params', () => {
@@ -907,7 +940,7 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.resolves(testInternal);
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {
@@ -926,12 +959,15 @@ describe('index test', function () {
                 foo: 'banana'
             };
 
-            return datastore.scan(testParams).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid param "foo"/);
-            });
+            return datastore
+                .scan(testParams)
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid param "foo"/);
+                });
         });
 
         it('scans for some data with distinct params', () => {
@@ -962,14 +998,11 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.resolves(testInternal);
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {},
-                    attributes: [[
-                        sequelizeMock.fn('DISTINCT', sequelizeMock.col('namespace')),
-                        'namespace'
-                    ]],
+                    attributes: [[sequelizeMock.fn('DISTINCT', sequelizeMock.col('namespace')), 'namespace']],
                     order: [['id', 'DESC']]
                 });
             });
@@ -980,12 +1013,15 @@ describe('index test', function () {
                 distinct: 'banana'
             };
 
-            return datastore.scan(testParams).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid distinct field "banana"/);
-            });
+            return datastore
+                .scan(testParams)
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid distinct field "banana"/);
+                });
         });
 
         it('scans for some data with indexed params', () => {
@@ -1015,7 +1051,7 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.resolves(testInternal);
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {
@@ -1057,7 +1093,7 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.resolves(testInternal);
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {
@@ -1099,7 +1135,7 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.resolves(testInternal);
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {
@@ -1140,15 +1176,17 @@ describe('index test', function () {
             testParams.table = 'jobs';
             testParams.exclude = ['id'];
             testParams.groupBy = ['key'];
-            sequelizeQueryGeneratorMock.selectQuery.withArgs('jobs', {
-                tableAs: 't',
-                attributes: ['MAX'],
-                where: { id: { GTE: 'col' }, key: { EQ: 'col' } }
-            }).returns('subQuery;');
+            sequelizeQueryGeneratorMock.selectQuery
+                .withArgs('jobs', {
+                    tableAs: 't',
+                    attributes: ['MAX'],
+                    where: { id: { GTE: 'col' }, key: { EQ: 'col' } }
+                })
+                .returns('subQuery;');
             sequelizeClientMock.literal.withArgs('(subQuery)').returns('literal');
             sequelizeTableMock.findAll.resolves(testInternal);
 
-            return datastore.scan(testParams).then((data) => {
+            return datastore.scan(testParams).then(data => {
                 assert.notDeepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     attributes: [['col', 'name']],
@@ -1161,14 +1199,17 @@ describe('index test', function () {
         it('fails when given an unknown table name', () => {
             sequelizeTableMock.findAll.rejects(new Error('cannot find entries in table'));
 
-            return datastore._scan({
-                table: 'tableUnicorn'
-            }).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid table name/);
-            });
+            return datastore
+                ._scan({
+                    table: 'tableUnicorn'
+                })
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid table name/);
+                });
         });
 
         it('fails when it encounters an error', () => {
@@ -1176,14 +1217,17 @@ describe('index test', function () {
 
             sequelizeTableMock.findAll.rejects(testError);
 
-            return datastore._scan({
-                table: 'pipelines'
-            }).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, testError.message);
-            });
+            return datastore
+                ._scan({
+                    table: 'pipelines'
+                })
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, testError.message);
+                });
         });
 
         it('scans for data within date range', () => {
@@ -1302,10 +1346,7 @@ describe('index test', function () {
 
         it('query without raw response', () => {
             const testData = [{ id: 1, value: 'val' }];
-            const revertdecodeFromDialect = Datastore.__set__(
-                'decodeFromDialect',
-                sinon.stub().returns({})
-            );
+            const revertdecodeFromDialect = Datastore.__set__('decodeFromDialect', sinon.stub().returns({}));
 
             sequelizeClientMock.getDialect = sinon.stub().returns('postgres');
             sequelizeTableMock.sequelize.query.resolves(testData);
@@ -1336,26 +1377,34 @@ describe('index test', function () {
         it('query fails when given an unknown table name', () => {
             testParams.table = 'dne';
 
-            return datastore.query(testParams).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /Invalid table name/);
-            });
+            return datastore
+                .query(testParams)
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /Invalid table name/);
+                });
         });
 
         it('query fails when not given a matching query', () => {
-            testParams.queries = [{
-                dbType: 'dne',
-                query: 'dneQuery'
-            }];
+            testParams.queries = [
+                {
+                    dbType: 'dne',
+                    query: 'dneQuery'
+                }
+            ];
 
-            return datastore.query(testParams).then(() => {
-                throw new Error('Oops');
-            }).catch((err) => {
-                assert.isOk(err, 'Error should be returned');
-                assert.match(err.message, /No query found for/);
-            });
+            return datastore
+                .query(testParams)
+                .then(() => {
+                    throw new Error('Oops');
+                })
+                .catch(err => {
+                    assert.isOk(err, 'Error should be returned');
+                    assert.match(err.message, /No query found for/);
+                });
         });
     });
 });

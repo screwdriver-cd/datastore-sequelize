@@ -24,9 +24,9 @@ function decodeFromDialect(dialect, content, model) {
     }
 
     const decodedValues = content.toJSON();
-    const fields = model.base.describe().children;
+    const fields = model.base.describe().keys;
 
-    Object.keys(decodedValues).forEach((fieldName) => {
+    Object.keys(decodedValues).forEach(fieldName => {
         const field = fields[fieldName] || {};
         const fieldType = field.type;
 
@@ -64,7 +64,7 @@ function encodeToDialect(dialect, content, model) {
     const encodedKeys = Object.keys(content);
     const encodedValues = encodedKeys.map(keyName => content[keyName]);
 
-    return Promise.all(encodedValues).then((promisedValues) => {
+    return Promise.all(encodedValues).then(promisedValues => {
         const encodedObject = {};
 
         // Flatten into an object again
@@ -72,9 +72,9 @@ function encodeToDialect(dialect, content, model) {
             encodedObject[keyName] = promisedValues[index];
         });
 
-        const fields = model.base.describe().children;
+        const fields = model.base.describe().keys;
 
-        encodedKeys.forEach((fieldName) => {
+        encodedKeys.forEach(fieldName => {
             const field = fields[fieldName] || {};
             const fieldType = field.type;
 
@@ -97,35 +97,44 @@ function encodeToDialect(dialect, content, model) {
  */
 function getSequelizeTypeFromJoi(dialect, type, rules) {
     // Get the column length if length/max rule is included in dataschema
-    const length = rules.filter(o => o.name === 'length' || o.name === 'max').map(o => o.arg)[0];
+    let length;
+    const column = rules.filter(o => o.name === 'length' || o.name === 'max');
+
+    if (column) {
+        const args = column.map(o => o.arg)[0] || column.map(o => o.args)[0];
+
+        if (args) {
+            length = args.limit;
+        }
+    }
 
     switch (type) {
-    case 'string':
-        if (length) {
-            return Sequelize.STRING(length);
-        }
+        case 'string':
+            if (length) {
+                return Sequelize.STRING(length);
+            }
 
-        return Sequelize.TEXT;
-    case 'array':
-        return Sequelize.TEXT;
-    case 'object':
-        return Sequelize.TEXT('medium');
-    case 'date':
-        return Sequelize.DATE;
-    case 'number':
-        return Sequelize.DOUBLE;
-    case 'boolean':
-        return Sequelize.BOOLEAN;
-    case 'binary':
-        return Sequelize.BLOB;
-    case 'alternatives':
-        if (length) {
-            return Sequelize.STRING(length);
-        }
+            return Sequelize.TEXT;
+        case 'array':
+            return Sequelize.TEXT;
+        case 'object':
+            return Sequelize.TEXT('medium');
+        case 'date':
+            return Sequelize.DATE;
+        case 'number':
+            return Sequelize.DOUBLE;
+        case 'boolean':
+            return Sequelize.BOOLEAN;
+        case 'binary':
+            return Sequelize.BLOB;
+        case 'alternatives':
+            if (length) {
+                return Sequelize.STRING(length);
+            }
 
-        return Sequelize.TEXT('medium');
-    default:
-        return null;
+            return Sequelize.TEXT('medium');
+        default:
+            return null;
     }
 }
 
@@ -157,17 +166,12 @@ class Squeakquel extends Datastore {
         // It won't work if prefix is passed to Sequelize
         delete config.prefix;
 
-        this.client = new Sequelize(
-            config.database || 'screwdriver',
-            config.username,
-            config.password,
-            config
-        );
+        this.client = new Sequelize(config.database || 'screwdriver', config.username, config.password, config);
 
         this.tables = {};
         this.models = {};
 
-        MODEL_NAMES.forEach((modelName) => {
+        MODEL_NAMES.forEach(modelName => {
             const table = this._defineTable(modelName);
             const model = schemas.models[modelName];
 
@@ -186,14 +190,14 @@ class Squeakquel extends Datastore {
     _defineTable(modelName) {
         const schema = MODELS[modelName];
         const tableName = `${this.prefix}${schema.tableName}`;
-        const fields = schema.base.describe().children;
+        const fields = schema.base.describe().keys;
         const tableFields = {};
         const tableOptions = {
             timestamps: false,
             indexes: schema.indexes
         };
 
-        Object.keys(fields).forEach((fieldName) => {
+        Object.keys(fields).forEach(fieldName => {
             const field = fields[fieldName];
 
             let rules;
@@ -201,16 +205,14 @@ class Squeakquel extends Datastore {
             if (field.alternatives) {
                 // For schema using alternatives like triggers table.
                 rules = field.alternatives[0].rules;
+            } else if (field.matches && field.matches[0] && field.matches[0].schema) {
+                rules = field.matches[0].schema.rules;
             } else {
                 rules = field.rules;
             }
 
             const output = {
-                type: getSequelizeTypeFromJoi(
-                    this.client.getDialect(),
-                    field.type,
-                    rules || []
-                )
+                type: getSequelizeTypeFromJoi(this.client.getDialect(), field.type, rules || [])
             };
 
             if (fieldName === 'id') {
@@ -290,9 +292,11 @@ class Squeakquel extends Datastore {
 
         return encodeToDialect(this.client.getDialect(), userData, model)
             .then(item => table.create(item))
-            .then(row => row.get({
-                plain: true
-            }));
+            .then(row =>
+                row.get({
+                    plain: true
+                })
+            );
     }
 
     /**
@@ -310,11 +314,13 @@ class Squeakquel extends Datastore {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
 
-        return table.destroy({
-            where: {
-                id: config.params.id
-            }
-        }).then(() => null);
+        return table
+            .destroy({
+                where: {
+                    id: config.params.id
+                }
+            })
+            .then(() => null);
     }
 
     /**
@@ -336,9 +342,11 @@ class Squeakquel extends Datastore {
         }
 
         return encodeToDialect(this.client.getDialect(), userData, model)
-            .then(item => table.update(item, {
-                where: { id }
-            }))
+            .then(item =>
+                table.update(item, {
+                    where: { id }
+                })
+            )
             .then(() => userData);
     }
 
@@ -387,7 +395,7 @@ class Squeakquel extends Datastore {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
 
-        const fields = model.base.describe().children;
+        const fields = model.base.describe().keys;
         const validFields = Object.keys(fields);
 
         if (config.paginate) {
@@ -396,21 +404,19 @@ class Squeakquel extends Datastore {
         }
 
         if (config.params && Object.keys(config.params).length > 0) {
-            Object.keys(config.params).forEach((paramName) => {
+            Object.keys(config.params).forEach(paramName => {
                 const paramValue = config.params[paramName];
 
                 if (Array.isArray(paramValue)) {
                     findParams.where[paramName] = {
                         [Sequelize.Op.in]: paramValue
                     };
-                // Return distinct rows
+                    // Return distinct rows
                 } else if (paramName === 'distinct') {
                     if (this._fieldInvalid({ validFields, field: paramValue })) {
                         throw new Error(`Invalid distinct field "${paramValue}"`);
                     }
-                    findParams.attributes = [[
-                        Sequelize.fn('DISTINCT', Sequelize.col(paramValue)), paramValue
-                    ]];
+                    findParams.attributes = [[Sequelize.fn('DISTINCT', Sequelize.col(paramValue)), paramValue]];
                 } else {
                     if (this._fieldInvalid({ validFields, field: paramName })) {
                         throw new Error(`Invalid param "${paramName}"`);
@@ -418,8 +424,7 @@ class Squeakquel extends Datastore {
                     findParams.where[paramName] = paramValue;
                 }
 
-                const indexIndex = (model.indexes && model.rangeKeys)
-                    ? model.indexes.indexOf(paramName) : -1;
+                const indexIndex = model.indexes && model.rangeKeys ? model.indexes.indexOf(paramName) : -1;
 
                 if (indexIndex >= 0) {
                     sortKey = model.rangeKeys[indexIndex];
@@ -428,9 +433,10 @@ class Squeakquel extends Datastore {
         }
 
         if (config.search && config.search.field && config.search.keyword) {
-            const searchKey = this.client.getDialect() === 'postgres'
-                ? { [Sequelize.Op.iLike]: config.search.keyword }
-                : { [Sequelize.Op.like]: config.search.keyword };
+            const searchKey =
+                this.client.getDialect() === 'postgres'
+                    ? { [Sequelize.Op.iLike]: config.search.keyword }
+                    : { [Sequelize.Op.like]: config.search.keyword };
 
             // If field is array, search for keyword in all fields
             if (Array.isArray(config.search.field)) {
@@ -438,7 +444,7 @@ class Squeakquel extends Datastore {
                     [Sequelize.Op.or]: []
                 };
 
-                config.search.field.forEach((field) => {
+                config.search.field.forEach(field => {
                     if (this._fieldInvalid({ validFields, field })) {
                         throw new Error(`Invalid search field "${field}"`);
                     }
@@ -446,7 +452,7 @@ class Squeakquel extends Datastore {
                         [field]: searchKey
                     });
                 });
-            // If field is string, search using field directly
+                // If field is string, search using field directly
             } else {
                 if (this._fieldInvalid({ validFields, field: config.search.field })) {
                     throw new Error(`Invalid search field "${config.search.field}"`);
@@ -489,7 +495,7 @@ class Squeakquel extends Datastore {
 
             // every other selected field must be aggregated so database engine won't complain
             // use "MAX" since the nature of this table is append-only
-            findParams.attributes = includedFields.map((field) => {
+            findParams.attributes = includedFields.map(field => {
                 let col = Sequelize.col(field);
 
                 // Temporary treatment to show correct trusted value.
@@ -500,19 +506,18 @@ class Squeakquel extends Datastore {
 
                     subCol = Sequelize.cast(subCol, 'integer');
 
-                    const subQueryForTrusted = this.client.dialect
-                        .QueryGenerator.selectQuery(tableName, {
-                            tableAs: 't1',
-                            attributes: [Sequelize.fn('MAX', subCol)],
-                            where: {
-                                name: {
-                                    [Sequelize.Op.eq]: Sequelize.col(`${tableName}.name`)
-                                },
-                                namespace: {
-                                    [Sequelize.Op.eq]: Sequelize.col(`${tableName}.namespace`)
-                                }
+                    const subQueryForTrusted = this.client.dialect.QueryGenerator.selectQuery(tableName, {
+                        tableAs: 't1',
+                        attributes: [Sequelize.fn('MAX', subCol)],
+                        where: {
+                            name: {
+                                [Sequelize.Op.eq]: Sequelize.col(`${tableName}.name`)
+                            },
+                            namespace: {
+                                [Sequelize.Op.eq]: Sequelize.col(`${tableName}.namespace`)
                             }
-                        }).slice(0, -1);
+                        }
+                    }).slice(0, -1);
 
                     col = this.client.literal(`(${subQueryForTrusted})`);
                 }
@@ -529,7 +534,7 @@ class Squeakquel extends Datastore {
 
             const where = { id: { [Sequelize.Op.gte]: Sequelize.col(`${tableName}.id`) } };
 
-            config.groupBy.forEach((v) => {
+            config.groupBy.forEach(v => {
                 where[v] = { [Sequelize.Op.eq]: Sequelize.col(`${tableName}.${v}`) };
             });
 
@@ -555,18 +560,15 @@ class Squeakquel extends Datastore {
             }
 
             findParams.attributes.push(config.aggregationField);
-            findParams.attributes.push([
-                Sequelize.fn('COUNT', Sequelize.col(config.aggregationField)),
-                'count']
-            );
+            findParams.attributes.push([Sequelize.fn('COUNT', Sequelize.col(config.aggregationField)), 'count']);
 
             findParams.group = config.aggregationField;
             delete findParams.order;
         }
 
-        return table.findAll(findParams)
-            .then(items => Promise.all(items.map(item =>
-                decodeFromDialect(this.client.getDialect(), item, model))));
+        return table
+            .findAll(findParams)
+            .then(items => Promise.all(items.map(item => decodeFromDialect(this.client.getDialect(), item, model))));
     }
 
     /**
@@ -586,7 +588,8 @@ class Squeakquel extends Datastore {
 
         if (!table) {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
-        } else if (!query) {
+        }
+        if (!query) {
             return Promise.reject(new Error(`No query found for "${dialect}" database`));
         }
 
@@ -595,7 +598,7 @@ class Squeakquel extends Datastore {
             queryParams.mapToModel = true;
         }
 
-        return table.sequelize.query(query.query, queryParams).then((data) => {
+        return table.sequelize.query(query.query, queryParams).then(data => {
             if (!config.rawResponse) {
                 data.map(d => decodeFromDialect(this.client.getDialect(), d, model));
             }
