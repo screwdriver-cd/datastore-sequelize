@@ -4,7 +4,7 @@
   "description": "Datastore implementation for mysql, postgres, sqlite3, and mssql",
   "main": "index.js",
   "scripts": {
-    "pretest": "eslint .",
+    "pretest": "eslint . --quiet",
     "test": "mocha --recursive --timeout 4000 --retries 1 --exit --color true",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },

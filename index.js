@@ -24,7 +24,7 @@ function decodeFromDialect(dialect, content, model) {
     }
 
     const decodedValues = content.toJSON();
-    const fields = model.base.describe().keys;
+    const fields = model.fields;
 
     Object.keys(decodedValues).forEach(fieldName => {
         const field = fields[fieldName] || {};
@@ -72,7 +72,7 @@ function encodeToDialect(dialect, content, model) {
             encodedObject[keyName] = promisedValues[index];
         });
 
-        const fields = model.base.describe().keys;
+        const fields = model.fields;
 
         encodedKeys.forEach(fieldName => {
             const field = fields[fieldName] || {};
@@ -190,7 +190,7 @@ class Squeakquel extends Datastore {
     _defineTable(modelName) {
         const schema = MODELS[modelName];
         const tableName = `${this.prefix}${schema.tableName}`;
-        const fields = schema.base.describe().keys;
+        const fields = schema.fields;
         const tableFields = {};
         const tableOptions = {
             timestamps: false,
@@ -198,7 +198,7 @@ class Squeakquel extends Datastore {
         };
 
         Object.keys(fields).forEach(fieldName => {
-            const field = fields[fieldName];
+            const field = fields[fieldName].describe();
 
             let rules;
 
@@ -395,7 +395,7 @@ class Squeakquel extends Datastore {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
 
-        const fields = model.base.describe().keys;
+        const fields = model.fields;
         const validFields = Object.keys(fields);
 
         if (config.paginate) {

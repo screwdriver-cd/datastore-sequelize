@@ -12,22 +12,24 @@ const rewire = require('rewire');
 sinon.assert.expose(assert, { prefix: '' });
 
 describe('index test', function() {
+    const model = {
+        id: joi.string().length(40),
+        str: joi.string(),
+        date: joi.date(),
+        num: joi.number(),
+        bool: joi.boolean(),
+        bin: joi.binary(),
+        arr: joi.array(),
+        obj: joi.object(),
+        any: joi.any(),
+        namespace: joi.string(),
+        name: joi.string()
+    };
     const dataSchemaMock = {
         models: {
             pipeline: {
-                base: joi.object({
-                    id: joi.string().length(40),
-                    str: joi.string(),
-                    date: joi.date(),
-                    num: joi.number(),
-                    bool: joi.boolean(),
-                    bin: joi.binary(),
-                    arr: joi.array(),
-                    obj: joi.object(),
-                    any: joi.any(),
-                    namespace: joi.string(),
-                    name: joi.string()
-                }),
+                base: joi.object(model),
+                fields: model,
                 tableName: 'pipelines',
                 keys: ['num', 'str'],
                 indexes: ['str']
@@ -37,6 +39,10 @@ describe('index test', function() {
                     id: joi.string().length(40),
                     name: joi.string()
                 }),
+                fields: {
+                    id: joi.string().length(40),
+                    name: joi.string()
+                },
                 tableName: 'jobs',
                 keys: ['name'],
                 indexes: ['name'],
@@ -48,6 +54,11 @@ describe('index test', function() {
                     src: joi.alternatives().try(joi.object().max(64), joi.string().max(64)),
                     dest: joi.alternatives().try(joi.object().max(64), joi.string().max(64))
                 }),
+                fields: {
+                    id: joi.string().length(40),
+                    src: joi.alternatives().try(joi.object().max(64), joi.string().max(64)),
+                    dest: joi.alternatives().try(joi.object().max(64), joi.string().max(64))
+                },
                 tableName: 'triggers',
                 keys: ['src', 'dest'],
                 indexes: ['dest', 'src']
