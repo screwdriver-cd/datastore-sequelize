@@ -915,7 +915,7 @@ describe('index test', function() {
             });
         });
 
-        it.only('scans all the data and returns based on mutliple search values and multiple fields', () => {
+        it('scans all the data and returns based on mutliple search values and multiple fields', () => {
             const testData = [
                 {
                     id: 'data3',
