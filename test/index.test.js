@@ -2,7 +2,7 @@
 
 /* eslint new-cap: ["error", { "capIsNewExceptionPattern": "^Sequelize\.." }] */
 /* eslint-disable no-underscore-dangle */
-const assert = require('chai').assert;
+const { assert } = require('chai');
 const mockery = require('mockery');
 const sinon = require('sinon');
 const joi = require('joi');
@@ -870,6 +870,97 @@ describe('index test', function() {
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {
                         OR: [{ namespace: { LIKE: '%foo%' } }, { name: { LIKE: '%foo%' } }]
+                    },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it('scans all the data and returns based on search fields with multiple values', () => {
+            const testData = [
+                {
+                    id: 'data2',
+                    namespace: 'screwdriver',
+                    name: 'foo'
+                },
+                {
+                    id: 'data1',
+                    namespace: 'fool',
+                    name: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.search = {
+                field: 'id',
+                keyword: ['data1', 'data2']
+            };
+
+            return datastore.scan(testParams).then(data => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        OR: [{ id: { LIKE: 'data1' } }, { id: { LIKE: 'data2' } }]
+                    },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it('scans all the data and returns based on mutliple search values and multiple fields', () => {
+            const testData = [
+                {
+                    id: 'data3',
+                    namespace: 'foo',
+                    name: 'value3'
+                },
+                {
+                    id: 'data2',
+                    namespace: 'screwdriver',
+                    name: 'foo'
+                },
+                {
+                    id: 'data1',
+                    namespace: 'fool',
+                    name: 'screwdriver'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[2])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.search = {
+                field: ['namespace', 'name'],
+                keyword: ['foo', 'screwdriver']
+            };
+
+            return datastore.scan(testParams).then(data => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        OR: [
+                            { namespace: { LIKE: 'foo' } },
+                            { namespace: { LIKE: 'screwdriver' } },
+                            { name: { LIKE: 'foo' } },
+                            { name: { LIKE: 'screwdriver' } }
+                        ]
                     },
                     order: [['id', 'DESC']]
                 });

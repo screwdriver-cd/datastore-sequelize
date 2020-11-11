@@ -374,7 +374,7 @@ class Squeakquel extends Datastore {
      * @param  {String}         [config.params.distinct]  Field to return distinct rows on
      * @param  {Object}         [config.search]           Search parameters
      * @param  {String|Array}   [config.search.field]     Search field (eg: jobName)
-     * @param  {String}         [config.search.keyword]   Search keyword (eg: main)
+     * @param  {String|Array}   [config.search.keyword]   Search keyword (eg: main)
      * @param  {String}         [config.sort]             Sorting option based on GSI range key. Ascending or descending.
      * @param  {String}         [config.sortBy]           Key to sort by; defaults to 'id'
      * @param  {String}         [config.startTime]        Search for records >= startTime
@@ -395,7 +395,7 @@ class Squeakquel extends Datastore {
             return Promise.reject(new Error(`Invalid table name "${config.table}"`));
         }
 
-        const fields = model.fields;
+        const { fields } = model;
         const validFields = Object.keys(fields);
 
         if (config.paginate) {
@@ -433,31 +433,39 @@ class Squeakquel extends Datastore {
         }
 
         if (config.search && config.search.field && config.search.keyword) {
-            const searchKey =
-                this.client.getDialect() === 'postgres'
-                    ? { [Sequelize.Op.iLike]: config.search.keyword }
-                    : { [Sequelize.Op.like]: config.search.keyword };
+            const searchOperator = this.client.getDialect() === 'postgres' ? Sequelize.Op.iLike : Sequelize.Op.like;
 
-            // If field is array, search for keyword in all fields
-            if (Array.isArray(config.search.field)) {
+            // If field or keyword is array, search for all keywords in all fields
+            if (Array.isArray(config.search.field) || Array.isArray(config.search.keyword)) {
+                const searchFields = Array.isArray(config.search.field) ? config.search.field : [config.search.field];
+                const searchKeywords = Array.isArray(config.search.keyword)
+                    ? config.search.keyword
+                    : [config.search.keyword];
+
                 findParams.where = {
                     [Sequelize.Op.or]: []
                 };
 
-                config.search.field.forEach(field => {
+                searchFields.forEach(field => {
                     if (this._fieldInvalid({ validFields, field })) {
                         throw new Error(`Invalid search field "${field}"`);
                     }
-                    findParams.where[Sequelize.Op.or].push({
-                        [field]: searchKey
-                    });
+                    searchKeywords.forEach(keyword =>
+                        findParams.where[Sequelize.Op.or].push({
+                            [field]: {
+                                [searchOperator]: keyword
+                            }
+                        })
+                    );
                 });
                 // If field is string, search using field directly
             } else {
                 if (this._fieldInvalid({ validFields, field: config.search.field })) {
                     throw new Error(`Invalid search field "${config.search.field}"`);
                 }
-                findParams.where[config.search.field] = searchKey;
+                findParams.where[config.search.field] = {
+                    [searchOperator]: config.search.keyword
+                };
             }
         }
 
