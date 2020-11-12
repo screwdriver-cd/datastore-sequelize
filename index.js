@@ -433,7 +433,7 @@ class Squeakquel extends Datastore {
         }
 
         if (config.search && config.search.field && config.search.keyword) {
-            const searchOperator = this.client.getDialect() === 'postgres' ? Sequelize.Op.iLike : Sequelize.Op.like;
+            let searchOperator = this.client.getDialect() === 'postgres' ? Sequelize.Op.iLike : Sequelize.Op.like;
 
             // If field or keyword is array, search for all keywords in all fields
             if (Array.isArray(config.search.field) || Array.isArray(config.search.keyword)) {
@@ -445,6 +445,8 @@ class Squeakquel extends Datastore {
                 findParams.where = {
                     [Sequelize.Op.or]: []
                 };
+
+                searchOperator = Number.isInteger(searchKeywords[0]) ? Sequelize.Op.eq : searchOperator;
 
                 searchFields.forEach(field => {
                     if (this._fieldInvalid({ validFields, field })) {
