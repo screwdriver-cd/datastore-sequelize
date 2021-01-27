@@ -492,6 +492,10 @@ class Squeakquel extends Datastore {
 
         // if query is simply excluding fields
         if (!config.groupBy && Array.isArray(config.exclude)) {
+            if (!findParams.attributes) {
+                findParams.attributes = {};
+            }
+
             findParams.attributes.exclude = [...config.exclude];
         }
 
