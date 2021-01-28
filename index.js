@@ -24,7 +24,7 @@ function decodeFromDialect(dialect, content, model) {
     }
 
     const decodedValues = content.toJSON();
-    const fields = model.fields;
+    const { fields } = model;
 
     Object.keys(decodedValues).forEach(fieldName => {
         const field = fields[fieldName] || {};
@@ -72,7 +72,7 @@ function encodeToDialect(dialect, content, model) {
             encodedObject[keyName] = promisedValues[index];
         });
 
-        const fields = model.fields;
+        const { fields } = model;
 
         encodedKeys.forEach(fieldName => {
             const field = fields[fieldName] || {};
@@ -190,7 +190,7 @@ class Squeakquel extends Datastore {
     _defineTable(modelName) {
         const schema = MODELS[modelName];
         const tableName = `${this.prefix}${schema.tableName}`;
-        const fields = schema.fields;
+        const { fields } = schema;
         const tableFields = {};
         const tableOptions = {
             timestamps: false,
@@ -332,7 +332,7 @@ class Squeakquel extends Datastore {
      * @return {Promise}                     Resolves to the record that was updated
      */
     _update(config) {
-        const id = config.params.id;
+        const { id } = config.params;
         const userData = config.params;
         const table = this.tables[config.table];
         const model = this.models[config.table];
@@ -370,6 +370,7 @@ class Squeakquel extends Datastore {
      * @param  {Object}         [config.paginate]         Pagination parameters
      * @param  {Number}         [config.paginate.count]   Number of items per page
      * @param  {Number}         [config.paginate.page]    Specific page of the set to return
+     * @param  {Boolean}        [config.getCount]         Get total count of record matching query criteria 
      * @param  {Object}         [config.params]           index => values to query on
      * @param  {String}         [config.params.distinct]  Field to return distinct rows on
      * @param  {Object}         [config.search]           Search parameters
@@ -380,7 +381,7 @@ class Squeakquel extends Datastore {
      * @param  {String}         [config.startTime]        Search for records >= startTime
      * @param  {String}         [config.endTime]          Search for records <= endTime
      * @param  {String}         [config.aggregationField] Field that will be aggregated in aggregation query
-     * @return {Promise}                                  Resolves to an array of records
+     * @return {Promise}                                  Resolves to an array of records or an object
      */
     _scan(config) {
         const table = this.tables[config.table];
@@ -578,6 +579,18 @@ class Squeakquel extends Datastore {
 
             findParams.group = config.aggregationField;
             delete findParams.order;
+        }
+
+        if (config.getCount) {
+            return table.findAndCountAll(findParams).then(result =>
+                Promise.all(result.rows.map(item => decodeFromDialect(this.client.getDialect(), item, model))).then(
+                    rows => {
+                        result.rows = rows;
+
+                        return Promise.resolve(result);
+                    }
+                )
+            );
         }
 
         return table
