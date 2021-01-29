@@ -93,6 +93,7 @@ describe('index test', function() {
             create: sinon.stub(),
             destroy: sinon.stub(),
             findAll: sinon.stub(),
+            findAndCountAll: sinon.stub(),
             findByPk: sinon.stub(),
             findOne: sinon.stub(),
             update: sinon.stub(),
@@ -1364,6 +1365,47 @@ describe('index test', function() {
                             LTE: testParams.endTime
                         }
                     },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it.only('scans for count and data when getCount was passed in', () => {
+            const testData = {
+                count: 2,
+                rows: [
+                    {
+                        id: 'data1',
+                        key: 'value1'
+                    },
+                    {
+                        id: 'data2',
+                        key: 'value2'
+                    }
+                ]
+            };
+            const testInternal = {
+                count: 2,
+                rows: [
+                    {
+                        toJSON: sinon.stub().returns(testData.rows[0])
+                    },
+                    {
+                        toJSON: sinon.stub().returns(testData.rows[1])
+                    }
+                ]
+            };
+
+            sequelizeTableMock.findAndCountAll.resolves(testInternal);
+            sequelizeTableMock.findAll.resolves([]);
+            testParams.table = 'jobs';
+            testParams.getCount = true;
+
+            return datastore.scan(testParams).then(data => {
+                assert.notCalled(sequelizeTableMock.findAll);
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAndCountAll, {
+                    where: {},
                     order: [['id', 'DESC']]
                 });
             });

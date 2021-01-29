@@ -370,7 +370,7 @@ class Squeakquel extends Datastore {
      * @param  {Object}         [config.paginate]         Pagination parameters
      * @param  {Number}         [config.paginate.count]   Number of items per page
      * @param  {Number}         [config.paginate.page]    Specific page of the set to return
-     * @param  {Boolean}        [config.getCount]         Get total count of record matching query criteria 
+     * @param  {Boolean}        [config.getCount]         Get total count of record matching query criteria
      * @param  {Object}         [config.params]           index => values to query on
      * @param  {String}         [config.params.distinct]  Field to return distinct rows on
      * @param  {Object}         [config.search]           Search parameters
