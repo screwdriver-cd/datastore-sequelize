@@ -1370,7 +1370,7 @@ describe('index test', function() {
             });
         });
 
-        it.only('scans for count and data when getCount was passed in', () => {
+        it('scans for count and data when getCount was passed in', () => {
             const testData = {
                 count: 2,
                 rows: [
