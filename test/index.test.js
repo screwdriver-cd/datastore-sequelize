@@ -968,6 +968,62 @@ describe('index test', function() {
             });
         });
 
+        it('scans all the data and returns based on search fields and param fields', () => {
+            const testData = [
+                {
+                    id: 'data3',
+                    namespace: 'foo',
+                    name: 'value3'
+                },
+                {
+                    id: 'data2',
+                    namespace: 'screwdriver',
+                    name: 'foo'
+                },
+                {
+                    id: 'data1',
+                    namespace: 'fool',
+                    name: 'screwdriver'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[2])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.params = {
+                bool: true
+            };
+            testParams.search = {
+                field: ['namespace', 'name'],
+                keyword: ['foo', 'screwdriver']
+            };
+
+            return datastore.scan(testParams).then(data => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        bool: true,
+                        OR: [
+                            { namespace: { LIKE: 'foo' } },
+                            { namespace: { LIKE: 'screwdriver' } },
+                            { name: { LIKE: 'foo' } },
+                            { name: { LIKE: 'screwdriver' } }
+                        ]
+                    },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
         it('throws error if search field does not exist in schema', () => {
             testParams.search = {
                 field: 'banana',

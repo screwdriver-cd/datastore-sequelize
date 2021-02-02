@@ -444,6 +444,7 @@ class Squeakquel extends Datastore {
                     : [config.search.keyword];
 
                 findParams.where = {
+                    ...findParams.where,
                     [Sequelize.Op.or]: []
                 };
 
