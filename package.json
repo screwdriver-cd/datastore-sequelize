@@ -58,7 +58,7 @@
     "screwdriver-data-schema": "^21.0.0",
     "screwdriver-datastore-base": "^5.0.0",
     "screwdriver-logger": "^1.0.0",
-    "sequelize": "^5.22.3",
+    "sequelize": "^6.6.5",
     "sqlite3": "^4.1.0"
   }
 }
