@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "pretest": "eslint . --quiet",
-    "test": "nyc --report-dir ./artifacts/coverage --reporter=lcov mocha --reporter mocha-multi-reporters --reporter-options configFile=./mocha.config.json --recursive --timeout 4000 --retries 1 --exit --allow-uncaught true --color true",
-    "semantic-release": "./node_modules/.bin/semantic-release --debug"
+    "test": "nyc --report-dir ./artifacts/coverage --reporter=lcov mocha --reporter mocha-multi-reporters --reporter-options configFile=./mocha.config.json --recursive --timeout 4000 --retries 1 --exit --allow-uncaught true --color true"
   },
   "repository": {
     "type": "git",
@@ -33,9 +32,6 @@
     "Tiffany Kyi <tiffanykyi@gmail.com>"
   ],
   "release": {
-    "branches": [
-      "master"
-    ],
     "debug": false
   },
   "devDependencies": {
