@@ -622,7 +622,7 @@ class Squeakquel extends Datastore {
         }
 
         if (!config.rawResponse) {
-            queryParams.model = this.client.models[config.table];
+            queryParams.model = this.client.models[`${this.prefix}${config.table}`];
             queryParams.mapToModel = true;
         }
 
