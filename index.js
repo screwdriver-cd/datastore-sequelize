@@ -138,6 +138,32 @@ function getSequelizeTypeFromJoi(dialect, type, rules) {
     }
 }
 
+/**
+ * Checks if default value is allowed for the specified dialect and Sequelize type
+ * @method isDefaultValueAllowed
+ * @param  {String}          dialect   Underlying system that we're writing to
+ * @param  {String}          fieldType Sequelize type
+ * @return {Boolean}                   true if default value is allowed. false otherwise.
+ */
+function isDefaultValueAllowed(dialect, fieldType) {
+    // Few models have defined default values for types that do not allow default values.
+    // Ex: pipeline.parameters https://github.com/screwdriver-cd/data-schema/blob/master/models/pipeline.js#L86
+    // To keep the DB sync backward compatible, we need to skip setting default values for such types.
+    // For more details, refer https://github.com/sequelize/sequelize/blob/0016739f2a4af5215ebbbe3724f8298c7335ed88/src/dialects/mysql/query-generator.js#L27
+    // TODO: Remove this when the models are refactored to not define default values for such types.
+    if (dialect === 'mysql') {
+        const typesWithoutDefault = [Sequelize.BLOB, Sequelize.TEXT, Sequelize.GEOMETRY, Sequelize.JSON];
+
+        for (const type of typesWithoutDefault) {
+            if (fieldType === type || fieldType instanceof type) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 class Squeakquel extends Datastore {
     /**
      * Constructs a Squeakquel object
@@ -151,7 +177,7 @@ class Squeakquel extends Datastore {
      * @param  {Integer} [config.slowlogThreshold=1000] Threshold for logging slowlogs in ms
      */
     constructor(config = {}) {
-        super();
+        super(config);
 
         this.slowlogThreshold = config.slowlogThreshold || 1000;
 
@@ -223,6 +249,29 @@ class Squeakquel extends Datastore {
 
             if (schema.keys.indexOf(fieldName) !== -1) {
                 output.unique = 'uniquerow';
+            }
+
+            if (field.flags) {
+                const defaultValue = field.flags.default;
+
+                if (defaultValue !== undefined && defaultValue !== null) {
+                    if (isDefaultValueAllowed(this.config.dialect, output.type)) {
+                        output.defaultValue =
+                            typeof defaultValue === 'object' ? JSON.stringify(defaultValue) : defaultValue;
+                    } else {
+                        logger.warn(
+                            `DB schema violation (Default value is not allowed): model=${
+                                schema.tableName
+                            } field=${fieldName} dataType=${output.type.toString()} defaultValue=${JSON.stringify(
+                                defaultValue
+                            )}`
+                        );
+                    }
+                }
+
+                if (field.flags.presence && field.flags.presence === 'required') {
+                    output.allowNull = false;
+                }
             }
 
             tableFields[fieldName] = output;

@@ -12,7 +12,7 @@ const rewire = require('rewire');
 sinon.assert.expose(assert, { prefix: '' });
 
 describe('index test', function() {
-    const model = {
+    const testModel = {
         id: joi.string().length(40),
         str: joi.string(),
         date: joi.date(),
@@ -25,14 +25,40 @@ describe('index test', function() {
         namespace: joi.string(),
         name: joi.string()
     };
+    const pipelineModel = {
+        name: joi.string(),
+        state: joi
+            .string()
+            .valid('ACTIVE', 'INACTIVE')
+            .max(10)
+            .description('Current state of the pipeline')
+            .example('ACTIVE')
+            .default('ACTIVE')
+            .required(),
+        parameters: joi.object().default({})
+    };
+
+    const defaultValueTestModel = {
+        name: joi.string(),
+        parameters: joi.object().default({}),
+        description: joi.string().default('Some description'),
+        value: joi.binary().default('0010010101010')
+    };
+
     const dataSchemaMock = {
         models: {
-            pipeline: {
-                base: joi.object(model),
-                fields: model,
-                tableName: 'pipelines',
+            testModel: {
+                base: joi.object(testModel),
+                fields: testModel,
+                tableName: 'testModels',
                 keys: ['num', 'str'],
                 indexes: ['str']
+            },
+            pipeline: {
+                base: joi.object(pipelineModel),
+                fields: pipelineModel,
+                tableName: 'pipelines',
+                keys: ['name']
             },
             job: {
                 base: joi.object({
@@ -62,6 +88,12 @@ describe('index test', function() {
                 tableName: 'triggers',
                 keys: ['src', 'dest'],
                 indexes: ['dest', 'src']
+            },
+            defaultValueTestModel: {
+                base: joi.object(defaultValueTestModel),
+                fields: defaultValueTestModel,
+                tableName: 'defaultValueTestModels',
+                keys: ['name']
             }
         },
         plugins: {
@@ -111,7 +143,7 @@ describe('index test', function() {
             getDialect: sinon.stub().returns('sqlite'),
             literal: sinon.stub(),
             dialect: sequelizeDialectMock,
-            models: { pipelines: 'pipelinesMock' }
+            models: { testModels: 'testModelsMock' }
         };
         sequelizeRowMock = {
             get: sinon.stub()
@@ -126,6 +158,7 @@ describe('index test', function() {
         sequelizeMock.BLOB = Sequelize.BLOB;
         sequelizeMock.JSON = Sequelize.JSON;
         sequelizeMock.ARRAY = Sequelize.ARRAY;
+        sequelizeMock.GEOMETRY = Sequelize.GEOMETRY;
         sequelizeMock.Op = {
             in: 'IN',
             like: 'LIKE',
@@ -182,6 +215,21 @@ describe('index test', function() {
             datastore = new Datastore({
                 dialect: 'sqlite'
             });
+            assert.calledWith(sequelizeClientMock.define, 'pipelines', {
+                name: {
+                    type: Sequelize.TEXT,
+                    unique: 'uniquerow'
+                },
+                state: {
+                    type: Sequelize.STRING(10),
+                    defaultValue: 'ACTIVE',
+                    allowNull: false
+                },
+                parameters: {
+                    type: Sequelize.TEXT('medium'),
+                    defaultValue: '{}'
+                }
+            });
             assert.calledWith(sequelizeClientMock.define, 'jobs', {
                 id: {
                     type: Sequelize.INTEGER.UNSIGNED,
@@ -208,7 +256,7 @@ describe('index test', function() {
                     unique: 'uniquerow'
                 }
             });
-            assert.calledWith(sequelizeClientMock.define, 'pipelines', {
+            assert.calledWith(sequelizeClientMock.define, 'testModels', {
                 id: {
                     type: Sequelize.INTEGER.UNSIGNED,
                     primaryKey: true,
@@ -247,6 +295,45 @@ describe('index test', function() {
                     type: Sequelize.TEXT
                 }
             });
+            assert.calledWith(sequelizeClientMock.define, 'defaultValueTestModels', {
+                name: {
+                    type: Sequelize.TEXT,
+                    unique: 'uniquerow'
+                },
+                parameters: {
+                    type: Sequelize.TEXT('medium'),
+                    defaultValue: '{}'
+                },
+                description: {
+                    type: Sequelize.TEXT,
+                    defaultValue: 'Some description'
+                },
+                value: {
+                    type: Sequelize.BLOB,
+                    defaultValue: '0010010101010'
+                }
+            });
+        });
+
+        it('default value is ignored for unsupported data types in mysql', () => {
+            datastore = new Datastore({
+                dialect: 'mysql'
+            });
+            assert.calledWith(sequelizeClientMock.define, 'defaultValueTestModels', {
+                name: {
+                    type: Sequelize.TEXT,
+                    unique: 'uniquerow'
+                },
+                parameters: {
+                    type: Sequelize.TEXT('medium')
+                },
+                description: {
+                    type: Sequelize.TEXT
+                },
+                value: {
+                    type: Sequelize.BLOB
+                }
+            });
         });
 
         it('constructs the clients with a prefix', () => {
@@ -255,7 +342,7 @@ describe('index test', function() {
                 prefix: 'boo_'
             });
             assert.calledWith(sequelizeClientMock.define, 'boo_jobs');
-            assert.calledWith(sequelizeClientMock.define, 'boo_pipelines');
+            assert.calledWith(sequelizeClientMock.define, 'boo_testModels');
             assert.isUndefined(sequelizeMock.lastCall.args[3].prefix);
         });
     });
@@ -290,7 +377,7 @@ describe('index test', function() {
     describe('get', () => {
         it('gets data by id', () => {
             const testParams = {
-                table: 'pipelines',
+                table: 'testModels',
                 params: {
                     id: 'someId'
                 }
@@ -324,7 +411,7 @@ describe('index test', function() {
 
         it('gets data without id', () => {
             const testParams = {
-                table: 'pipelines',
+                table: 'testModels',
                 params: {
                     field1: 'value1',
                     field2: 'value2'
@@ -364,7 +451,7 @@ describe('index test', function() {
 
             return datastore
                 .get({
-                    table: 'pipelines',
+                    table: 'testModels',
                     params: {
                         id: 'someId'
                     }
@@ -395,7 +482,7 @@ describe('index test', function() {
 
             return datastore
                 ._get({
-                    table: 'pipelines',
+                    table: 'testModels',
                     params: {
                         id: 'someId'
                     }
@@ -427,7 +514,7 @@ describe('index test', function() {
 
             return datastore
                 .save({
-                    table: 'pipelines',
+                    table: 'testModels',
                     params: {
                         key: 'value',
                         arr: [1, 2, 3],
@@ -453,7 +540,7 @@ describe('index test', function() {
 
             return datastore
                 .save({
-                    table: 'pipelines',
+                    table: 'testModels',
                     params: {
                         id: 'doesNotMatter',
                         data: {}
@@ -491,7 +578,7 @@ describe('index test', function() {
     describe('remove', () => {
         it('removes data by id', () => {
             const testParams = {
-                table: 'pipelines',
+                table: 'testModels',
                 params: {
                     id: 'someId'
                 }
@@ -532,7 +619,7 @@ describe('index test', function() {
 
             return datastore
                 .remove({
-                    table: 'pipelines',
+                    table: 'testModels',
                     params: {
                         id: 'someId'
                     }
@@ -559,7 +646,7 @@ describe('index test', function() {
 
             return datastore
                 .update({
-                    table: 'pipelines',
+                    table: 'testModels',
                     params: {
                         id,
                         targetKey: 'updatedValue'
@@ -598,7 +685,7 @@ describe('index test', function() {
 
             return datastore
                 .update({
-                    table: 'pipelines',
+                    table: 'testModels',
                     params: {
                         id: 'doesNotMatter',
                         data: {}
@@ -619,7 +706,7 @@ describe('index test', function() {
 
         beforeEach(() => {
             testParams = {
-                table: 'pipelines'
+                table: 'testModels'
             };
         });
 
@@ -1378,7 +1465,7 @@ describe('index test', function() {
 
             return datastore
                 ._scan({
-                    table: 'pipelines'
+                    table: 'testModels'
                 })
                 .then(() => {
                     throw new Error('Oops');
@@ -1473,7 +1560,7 @@ describe('index test', function() {
 
         beforeEach(() => {
             testParams = {
-                table: 'pipelines',
+                table: 'testModels',
                 queries: [
                     {
                         dbType: 'postgres',
@@ -1560,14 +1647,14 @@ describe('index test', function() {
                 assert.calledWith(sequelizeTableMock.sequelize.query, 'postgresQuery', {
                     replacements: testParams.replacements,
                     mapToModel: true,
-                    model: 'pipelinesMock'
+                    model: 'testModelsMock'
                 });
 
                 assert.calledWith(
                     Datastore.__get__('decodeFromDialect'),
                     'postgres',
                     testData[0],
-                    dataSchemaMock.models.pipeline
+                    dataSchemaMock.models.testModel
                 );
 
                 revertdecodeFromDialect();
