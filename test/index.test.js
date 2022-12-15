@@ -11,7 +11,7 @@ const rewire = require('rewire');
 
 sinon.assert.expose(assert, { prefix: '' });
 
-describe('index test', function() {
+describe('index test', function () {
     const testModel = {
         id: joi.string().length(40),
         str: joi.string(),
