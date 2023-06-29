@@ -170,6 +170,7 @@ describe('index test', function () {
         };
         sequelizeMock.col = sinon.stub().returns('col');
         sequelizeMock.fn = sinon.stub().returnsArg(0);
+        sequelizeMock.literal = Sequelize.literal;
 
         responseMock = {
             toJSON: sinon.stub(),
@@ -1311,7 +1312,7 @@ describe('index test', function () {
             });
         });
 
-        it('scans for aggregation of data', () => {
+        describe('scans for aggregation of data', () => {
             const testData = [
                 {
                     templateId: 7,
@@ -1331,24 +1332,45 @@ describe('index test', function () {
                 }
             ];
 
-            testParams.table = 'jobs';
-            testParams.aggregationField = 'templateId';
-            testParams.params = {
-                templateId: [7, 9, 10]
-            };
+            beforeEach(() => {
+                testParams.table = 'jobs';
+                testParams.aggregationField = 'templateId';
+                testParams.params = {
+                    templateId: [7, 9, 10]
+                };
 
-            sequelizeTableMock.findAll.resolves(testInternal);
+                sequelizeTableMock.findAll.resolves(testInternal);
+            });
 
-            return datastore.scan(testParams).then(data => {
-                assert.deepEqual(data, testData);
-                assert.calledWith(sequelizeTableMock.findAll, {
-                    where: {
-                        templateId: {
-                            IN: [7, 9, 10]
-                        }
-                    },
-                    attributes: ['templateId', ['COUNT', 'count']],
-                    group: 'templateId'
+            it('postgres DB', () => {
+                sequelizeClientMock.getDialect = sinon.stub().returns('postgres');
+
+                return datastore.scan(testParams).then(data => {
+                    assert.deepEqual(data, testData);
+                    assert.calledWith(sequelizeTableMock.findAll, {
+                        where: {
+                            templateId: {
+                                IN: [7, 9, 10]
+                            }
+                        },
+                        attributes: ['templateId', [Sequelize.literal(`COUNT("templateId")::int`), 'count']],
+                        group: 'templateId'
+                    });
+                });
+            });
+
+            it('other DB', () => {
+                return datastore.scan(testParams).then(data => {
+                    assert.deepEqual(data, testData);
+                    assert.calledWith(sequelizeTableMock.findAll, {
+                        where: {
+                            templateId: {
+                                IN: [7, 9, 10]
+                            }
+                        },
+                        attributes: ['templateId', ['COUNT', 'count']],
+                        group: 'templateId'
+                    });
                 });
             });
         });

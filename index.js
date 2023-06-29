@@ -564,7 +564,7 @@ class Squeakquel extends Datastore {
                 let col = Sequelize.col(field);
 
                 // Temporary treatment to show correct trusted value.
-                // This subQuery is used on fiels of SELECT clause.
+                // This subQuery is used on fields of SELECT clause.
                 // This needs to delete after the trusted table generated.
                 if (field === 'trusted') {
                     let subCol = Sequelize.col('trusted');
@@ -625,9 +625,15 @@ class Squeakquel extends Datastore {
             }
 
             findParams.attributes.push(config.aggregationField);
-            findParams.attributes.push([Sequelize.fn('COUNT', Sequelize.col(config.aggregationField)), 'count']);
+
+            if (this.client.getDialect() === 'postgres') {
+                findParams.attributes.push([Sequelize.literal(`COUNT("${config.aggregationField}")::int`), 'count']);
+            } else {
+                findParams.attributes.push([Sequelize.fn('COUNT', Sequelize.col(config.aggregationField)), 'count']);
+            }
 
             findParams.group = config.aggregationField;
+
             delete findParams.order;
         }
 
