@@ -9,6 +9,7 @@ const Sequelize = require('sequelize');
 const MODELS = schemas.models;
 const MODEL_NAMES = Object.keys(MODELS);
 const logger = require('screwdriver-logger');
+const pg = require('pg');
 
 /**
  * Converts data from the value stored in the datastore
@@ -178,6 +179,8 @@ class Squeakquel extends Datastore {
      */
     constructor(config = {}) {
         super(config);
+
+        pg.defaults.parseInt8 = true;
 
         this.slowlogThreshold = config.slowlogThreshold || 1000;
 
@@ -564,7 +567,7 @@ class Squeakquel extends Datastore {
                 let col = Sequelize.col(field);
 
                 // Temporary treatment to show correct trusted value.
-                // This subQuery is used on fiels of SELECT clause.
+                // This subQuery is used on fields of SELECT clause.
                 // This needs to delete after the trusted table generated.
                 if (field === 'trusted') {
                     let subCol = Sequelize.col('trusted');

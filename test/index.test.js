@@ -116,6 +116,7 @@ describe('index test', function () {
     let sequelizeClientMock;
     let sequelizeMock;
     let responseMock;
+    let pgMock;
 
     // Time not important. Only life important.
     this.timeout(5000);
@@ -176,12 +177,15 @@ describe('index test', function () {
             map: sinon.stub()
         };
 
+        pgMock = {};
+
         mockery.enable({
             useCleanCache: true,
             warnOnUnregistered: false
         });
         mockery.registerMock('sequelize', sequelizeMock);
         mockery.registerMock('screwdriver-data-schema', dataSchemaMock);
+        mockery.registerMock('pg', pgMock);
 
         /* eslint-disable global-require */
         Datastore = rewire('../index');
@@ -202,6 +206,7 @@ describe('index test', function () {
         sequelizeClientMock.define = sinon.stub().returns(sequelizeTableMock);
         sequelizeClientMock.sync = sinon.stub().resolves();
         sequelizeClientMock.getDialect = sinon.stub().returns('sqlite');
+        pgMock.defaults = {};
 
         datastore = new Datastore();
     });
@@ -313,6 +318,8 @@ describe('index test', function () {
                     defaultValue: '0010010101010'
                 }
             });
+
+            assert.isTrue(pgMock.defaults.parseInt8);
         });
 
         it('default value is ignored for unsupported data types in mysql', () => {
@@ -334,6 +341,7 @@ describe('index test', function () {
                     type: Sequelize.BLOB
                 }
             });
+            assert.isTrue(pgMock.defaults.parseInt8);
         });
 
         it('constructs the clients with a prefix', () => {
@@ -344,6 +352,14 @@ describe('index test', function () {
             assert.calledWith(sequelizeClientMock.define, 'boo_jobs');
             assert.calledWith(sequelizeClientMock.define, 'boo_testModels');
             assert.isUndefined(sequelizeMock.lastCall.args[3].prefix);
+        });
+
+        it('disables casting bigint to string for postgres', () => {
+            datastore = new Datastore({
+                dialect: 'postgres'
+            });
+
+            assert.isTrue(pgMock.defaults.parseInt8);
         });
     });
 
