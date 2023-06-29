@@ -9,6 +9,7 @@ const Sequelize = require('sequelize');
 const MODELS = schemas.models;
 const MODEL_NAMES = Object.keys(MODELS);
 const logger = require('screwdriver-logger');
+const pg = require('pg');
 
 /**
  * Converts data from the value stored in the datastore
@@ -178,6 +179,8 @@ class Squeakquel extends Datastore {
      */
     constructor(config = {}) {
         super(config);
+
+        pg.defaults.parseInt8 = true;
 
         this.slowlogThreshold = config.slowlogThreshold || 1000;
 
@@ -625,15 +628,9 @@ class Squeakquel extends Datastore {
             }
 
             findParams.attributes.push(config.aggregationField);
-
-            if (this.client.getDialect() === 'postgres') {
-                findParams.attributes.push([Sequelize.literal(`COUNT("${config.aggregationField}")::int`), 'count']);
-            } else {
-                findParams.attributes.push([Sequelize.fn('COUNT', Sequelize.col(config.aggregationField)), 'count']);
-            }
+            findParams.attributes.push([Sequelize.fn('COUNT', Sequelize.col(config.aggregationField)), 'count']);
 
             findParams.group = config.aggregationField;
-
             delete findParams.order;
         }
 

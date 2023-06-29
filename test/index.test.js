@@ -116,6 +116,7 @@ describe('index test', function () {
     let sequelizeClientMock;
     let sequelizeMock;
     let responseMock;
+    let pgMock;
 
     // Time not important. Only life important.
     this.timeout(5000);
@@ -170,12 +171,13 @@ describe('index test', function () {
         };
         sequelizeMock.col = sinon.stub().returns('col');
         sequelizeMock.fn = sinon.stub().returnsArg(0);
-        sequelizeMock.literal = Sequelize.literal;
 
         responseMock = {
             toJSON: sinon.stub(),
             map: sinon.stub()
         };
+
+        pgMock = {};
 
         mockery.enable({
             useCleanCache: true,
@@ -183,6 +185,7 @@ describe('index test', function () {
         });
         mockery.registerMock('sequelize', sequelizeMock);
         mockery.registerMock('screwdriver-data-schema', dataSchemaMock);
+        mockery.registerMock('pg', pgMock);
 
         /* eslint-disable global-require */
         Datastore = rewire('../index');
@@ -203,6 +206,7 @@ describe('index test', function () {
         sequelizeClientMock.define = sinon.stub().returns(sequelizeTableMock);
         sequelizeClientMock.sync = sinon.stub().resolves();
         sequelizeClientMock.getDialect = sinon.stub().returns('sqlite');
+        pgMock.defaults = {};
 
         datastore = new Datastore();
     });
@@ -314,6 +318,8 @@ describe('index test', function () {
                     defaultValue: '0010010101010'
                 }
             });
+
+            assert.isTrue(pgMock.defaults.parseInt8);
         });
 
         it('default value is ignored for unsupported data types in mysql', () => {
@@ -335,6 +341,7 @@ describe('index test', function () {
                     type: Sequelize.BLOB
                 }
             });
+            assert.isTrue(pgMock.defaults.parseInt8);
         });
 
         it('constructs the clients with a prefix', () => {
@@ -345,6 +352,14 @@ describe('index test', function () {
             assert.calledWith(sequelizeClientMock.define, 'boo_jobs');
             assert.calledWith(sequelizeClientMock.define, 'boo_testModels');
             assert.isUndefined(sequelizeMock.lastCall.args[3].prefix);
+        });
+
+        it('disables casting bigint to string for postgres', () => {
+            datastore = new Datastore({
+                dialect: 'postgres'
+            });
+
+            assert.isTrue(pgMock.defaults.parseInt8);
         });
     });
 
@@ -1312,7 +1327,7 @@ describe('index test', function () {
             });
         });
 
-        describe('scans for aggregation of data', () => {
+        it('scans for aggregation of data', () => {
             const testData = [
                 {
                     templateId: 7,
@@ -1332,45 +1347,24 @@ describe('index test', function () {
                 }
             ];
 
-            beforeEach(() => {
-                testParams.table = 'jobs';
-                testParams.aggregationField = 'templateId';
-                testParams.params = {
-                    templateId: [7, 9, 10]
-                };
+            testParams.table = 'jobs';
+            testParams.aggregationField = 'templateId';
+            testParams.params = {
+                templateId: [7, 9, 10]
+            };
 
-                sequelizeTableMock.findAll.resolves(testInternal);
-            });
+            sequelizeTableMock.findAll.resolves(testInternal);
 
-            it('postgres DB', () => {
-                sequelizeClientMock.getDialect = sinon.stub().returns('postgres');
-
-                return datastore.scan(testParams).then(data => {
-                    assert.deepEqual(data, testData);
-                    assert.calledWith(sequelizeTableMock.findAll, {
-                        where: {
-                            templateId: {
-                                IN: [7, 9, 10]
-                            }
-                        },
-                        attributes: ['templateId', [Sequelize.literal(`COUNT("templateId")::int`), 'count']],
-                        group: 'templateId'
-                    });
-                });
-            });
-
-            it('other DB', () => {
-                return datastore.scan(testParams).then(data => {
-                    assert.deepEqual(data, testData);
-                    assert.calledWith(sequelizeTableMock.findAll, {
-                        where: {
-                            templateId: {
-                                IN: [7, 9, 10]
-                            }
-                        },
-                        attributes: ['templateId', ['COUNT', 'count']],
-                        group: 'templateId'
-                    });
+            return datastore.scan(testParams).then(data => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        templateId: {
+                            IN: [7, 9, 10]
+                        }
+                    },
+                    attributes: ['templateId', ['COUNT', 'count']],
+                    group: 'templateId'
                 });
             });
         });
