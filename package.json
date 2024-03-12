@@ -51,7 +51,7 @@
     "mysql2": "^2.3.3",
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
-    "screwdriver-data-schema": "^22.0.1",
+    "screwdriver-data-schema": "^23.0.4",
     "screwdriver-datastore-base": "^6.0.0",
     "screwdriver-logger": "^2.0.0",
     "sequelize": "^6.27.0",
