@@ -164,6 +164,8 @@ describe('index test', function () {
             in: 'IN',
             like: 'LIKE',
             iLike: 'ILIKE',
+            notLike: 'NOT LIKE',
+            notILike: 'NOT ILIKE',
             or: 'OR',
             gte: 'GTE',
             lte: 'LTE',
@@ -894,6 +896,44 @@ describe('index test', function () {
             });
         });
 
+        it('scans all the data and returns based on inverse flag search values', () => {
+            const testData = [
+                {
+                    id: 'data2',
+                    name: 'food',
+                    key: 'value2'
+                },
+                {
+                    id: 'data1',
+                    name: 'foodie',
+                    key: 'value1'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+            testParams.search = {
+                field: 'name',
+                keyword: '%foo%',
+                inverse: true
+            };
+
+            return datastore.scan(testParams).then(data => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: { name: { 'NOT LIKE': '%foo%' } },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
         it('scans all the data and returns based on search values (case insensitive)', () => {
             const testData = [
                 {
@@ -966,14 +1006,17 @@ describe('index test', function () {
             sequelizeTableMock.findAll.resolves(testInternal);
             testParams.search = {
                 field: ['namespace', 'name'],
-                keyword: '%foo%'
+                keyword: '%foo%',
+                inverse: true
             };
+
+            sequelizeClientMock.getDialect = sinon.stub().returns('postgres');
 
             return datastore.scan(testParams).then(data => {
                 assert.deepEqual(data, testData);
                 assert.calledWith(sequelizeTableMock.findAll, {
                     where: {
-                        OR: [{ namespace: { LIKE: '%foo%' } }, { name: { LIKE: '%foo%' } }]
+                        OR: [{ namespace: { 'NOT ILIKE': '%foo%' } }, { name: { 'NOT ILIKE': '%foo%' } }]
                     },
                     order: [['id', 'DESC']]
                 });
