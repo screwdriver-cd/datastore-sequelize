@@ -488,6 +488,11 @@ class Squeakquel extends Datastore {
         if (config.search && config.search.field && config.search.keyword) {
             let searchOperator = this.client.getDialect() === 'postgres' ? Sequelize.Op.iLike : Sequelize.Op.like;
 
+            // If flag is set, use NOT ILIKE and NOT LIKE
+            if (config.search.inverse) {
+                searchOperator = this.client.getDialect() === 'postgres' ? Sequelize.Op.notILike : Sequelize.Op.notLike;
+            }
+
             // If field or keyword is array, search for all keywords in all fields
             if (Array.isArray(config.search.field) || Array.isArray(config.search.keyword)) {
                 const searchFields = Array.isArray(config.search.field) ? config.search.field : [config.search.field];
