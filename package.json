@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "joi": "^17.7.0",
-    "mysql2": "^2.3.3",
+    "mysql2": "^3.9.4",
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
     "screwdriver-data-schema": "^23.0.4",
