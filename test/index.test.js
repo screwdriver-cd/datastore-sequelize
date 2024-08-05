@@ -169,6 +169,8 @@ describe('index test', function () {
             or: 'OR',
             gte: 'GTE',
             lte: 'LTE',
+            gt: 'GT',
+            lt: 'LT',
             eq: 'EQ'
         };
         sequelizeMock.col = sinon.stub().returns('col');
@@ -1252,6 +1254,47 @@ describe('index test', function () {
                         name: 'foo',
                         id: {
                             IN: [1, 2, 3]
+                        }
+                    },
+                    order: [['id', 'DESC']]
+                });
+            });
+        });
+
+        it('scans for some data with params with inequality sign (gt or lt)', () => {
+            const testData = [
+                {
+                    id: 7,
+                    name: 'foo'
+                },
+                {
+                    id: 6,
+                    name: 'foo'
+                }
+            ];
+            const testInternal = [
+                {
+                    toJSON: sinon.stub().returns(testData[0])
+                },
+                {
+                    toJSON: sinon.stub().returns(testData[1])
+                }
+            ];
+
+            testParams.params = {
+                name: 'foo',
+                id: 'gt:5'
+            };
+
+            sequelizeTableMock.findAll.resolves(testInternal);
+
+            return datastore.scan(testParams).then(data => {
+                assert.deepEqual(data, testData);
+                assert.calledWith(sequelizeTableMock.findAll, {
+                    where: {
+                        name: 'foo',
+                        id: {
+                            GT: '5'
                         }
                     },
                     order: [['id', 'DESC']]
