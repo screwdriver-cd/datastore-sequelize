@@ -10,6 +10,8 @@ const MODELS = schemas.models;
 const MODEL_NAMES = Object.keys(MODELS);
 const logger = require('screwdriver-logger');
 const pg = require('pg');
+// Regex patten for gt:123, lt:456
+const INEQUALITY_SIGNS = /^(gt|lt):([\d]+)$/;
 
 /**
  * Converts data from the value stored in the datastore
@@ -474,7 +476,23 @@ class Squeakquel extends Datastore {
                     if (this._fieldInvalid({ validFields, field: paramName })) {
                         throw new Error(`Invalid param "${paramName}"`);
                     }
-                    findParams.where[paramName] = paramValue;
+                    // Check for gt: or lt: prefix to set greater than or less than operator
+                    // Currently only matching for number values
+                    if (INEQUALITY_SIGNS.test(paramValue)) {
+                        const [, sign, paramVal] = paramValue.match(INEQUALITY_SIGNS);
+
+                        if (sign === 'gt') {
+                            findParams.where[paramName] = {
+                                [Sequelize.Op.gt]: paramVal
+                            };
+                        } else if (sign === 'lt') {
+                            findParams.where[paramName] = {
+                                [Sequelize.Op.lt]: paramVal
+                            };
+                        }
+                    } else {
+                        findParams.where[paramName] = paramValue;
+                    }
                 }
 
                 const indexIndex = model.indexes && model.rangeKeys ? model.indexes.indexOf(paramName) : -1;
