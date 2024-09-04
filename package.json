@@ -1,6 +1,6 @@
 {
   "name": "screwdriver-datastore-sequelize",
-  "version": "8.0.0",
+  "version": "9.0.0",
   "description": "Datastore implementation for mysql, postgres, sqlite3, and mssql",
   "main": "index.js",
   "scripts": {
@@ -51,8 +51,8 @@
     "mysql2": "^3.9.4",
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
-    "screwdriver-data-schema": "^23.0.4",
-    "screwdriver-datastore-base": "^6.0.0",
+    "screwdriver-data-schema": "^24.0.0",
+    "screwdriver-datastore-base": "^7.0.0",
     "screwdriver-logger": "^2.0.0",
     "sequelize": "^6.27.0",
     "sqlite3": "^5.1.4"
