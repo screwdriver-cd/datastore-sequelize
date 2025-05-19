@@ -6,6 +6,7 @@
 const Datastore = require('screwdriver-datastore-base');
 const schemas = require('screwdriver-data-schema');
 const Sequelize = require('sequelize');
+const fs = require('fs');
 const MODELS = schemas.models;
 const MODEL_NAMES = Object.keys(MODELS);
 const logger = require('screwdriver-logger');
@@ -167,6 +168,28 @@ function isDefaultValueAllowed(dialect, fieldType) {
     return true;
 }
 
+/**
+ * Set ca from config.caCert
+ * @param {Object} config
+ * @param {String} config.caCert - A file path or a raw certificate string.
+ * @param {Object} config.dialectOptions
+ * @param {Object} [config.dialectOptions.ssl]
+ * @param {Boolean} [config.dialectOptions.ssl.rejectUnauthorized]
+ */
+function configureSSL(config) {
+    const sslOptions = config.dialectOptions.ssl;
+
+    if (sslOptions.rejectUnauthorized !== true || !config.caCert) {
+        return;
+    }
+
+    if (fs.existsSync(config.caCert)) {
+        config.dialectOptions.ssl.ca = fs.readFileSync(config.caCert, 'utf8');
+    } else {
+        config.dialectOptions.ssl.ca = config.caCert;
+    }
+}
+
 class Squeakquel extends Datastore {
     /**
      * Constructs a Squeakquel object
@@ -177,6 +200,8 @@ class Squeakquel extends Datastore {
      * @param  {String}  [config.username]              Login username
      * @param  {String}  [config.password]              Login password
      * @param  {String}  [config.prefix]                Prefix to add before all table names
+     * @param  {String}  [config.dialectOptions]        Additional options, which are passed directly to the connection library
+     * @param  {String}  [config.caCert]                Raw certificate string or cert file path
      * @param  {Integer} [config.slowlogThreshold=1000] Threshold for logging slowlogs in ms
      */
     constructor(config = {}) {
@@ -196,6 +221,11 @@ class Squeakquel extends Datastore {
 
         // It won't work if prefix is passed to Sequelize
         delete config.prefix;
+
+        // SSL configure
+        if (config.dialectOptions && config.dialectOptions.ssl) {
+            configureSSL(config);
+        }
 
         this.client = new Sequelize(config.database || 'screwdriver', config.username, config.password, config);
 

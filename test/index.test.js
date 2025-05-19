@@ -358,6 +358,47 @@ describe('index test', function () {
             assert.isUndefined(sequelizeMock.lastCall.args[3].prefix);
         });
 
+        it('constructs the clients with ssl options, raw certificate string', () => {
+            datastore = new Datastore({
+                dialect: 'mysql',
+                dialiectOptions: 'mysql',
+                dialectOptions: {
+                    ssl: {
+                        rejectUnauthorized: true
+                    }
+                },
+                caCert: 'This is cert file test with raw string'
+            });
+            assert.deepEqual(datastore.config.dialectOptions.ssl.ca, 'This is cert file test with raw string');
+        });
+
+        it('constructs the clients with ssl options, ca cert filePath', () => {
+            datastore = new Datastore({
+                dialect: 'mysql',
+                dialiectOptions: 'mysql',
+                dialectOptions: {
+                    ssl: {
+                        rejectUnauthorized: true
+                    }
+                },
+                caCert: './test/data/ca.crt'
+            });
+            assert.deepEqual(datastore.config.dialectOptions.ssl.ca, 'THIS IS CERT FILE TEST WITH FILEPATH\n');
+        });
+
+        it('constructs the clients with ssl options, no certificate', () => {
+            datastore = new Datastore({
+                dialect: 'mysql',
+                dialiectOptions: 'mysql',
+                dialectOptions: {
+                    ssl: {
+                        rejectUnauthorized: false
+                    }
+                }
+            });
+            assert.notExists(datastore.config.dialectOptions.ssl.ca);
+        });
+
         it('disables casting bigint to string for postgres', () => {
             datastore = new Datastore({
                 dialect: 'postgres'
