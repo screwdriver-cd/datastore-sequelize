@@ -59,8 +59,8 @@
   },
   "overrides": {
     "sqlite3": {
-      "tar": "6.2.1",
-      "node-gyp": "8.4.1"
+      "tar": "^7.5.9",
+      "node-gyp": "^12.2.0"
     }
   }
 }
