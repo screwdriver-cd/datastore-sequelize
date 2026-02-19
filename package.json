@@ -56,5 +56,11 @@
     "screwdriver-logger": "^3.0.0",
     "sequelize": "^6.37.5",
     "sqlite3": "^5.1.7"
+  },
+  "overrides": {
+    "sqlite3": {
+      "tar": "^7.5.9",
+      "node-gyp": "^12.2.0"
+    }
   }
 }
